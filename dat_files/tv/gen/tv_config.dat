@@ -1,0 +1,10 @@
+class {
+
+  bool testing;
+
+  // Where to write the logs (if empty, doesn't write logs anywhere)
+  // ...exceptions get dumped to the log file, which can be very confusing,
+  // as no on-screen indication of a problem occurs
+  File log_file;
+
+}

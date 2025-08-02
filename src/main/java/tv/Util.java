@@ -1,0 +1,115 @@
+package tv;
+
+import static js.base.Tools.*;
+
+import java.time.Instant;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.ZoneId;
+import java.time.format.DateTimeFormatter;
+import java.time.format.DateTimeFormatterBuilder;
+import java.time.temporal.ChronoField;
+import java.util.Collection;
+import java.util.Comparator;
+import java.util.List;
+import java.util.Random;
+import java.util.Set;
+
+import tv.gen.TvConfig;
+import js.base.BasePrinter;
+import js.base.DateTimeTools;
+import js.data.DataUtil;
+import js.data.LongArray;
+import js.file.Files;
+import js.geometry.MyMath;
+import js.json.JSMap;
+import js.parsing.DFA;
+import js.parsing.Scanner;
+
+public final class Util {
+
+  public static final int BORDER_NONE = 0;
+  public static final int BORDER_THIN = 1;
+  public static final int BORDER_THICK = 2;
+  public static final int BORDER_ROUNDED = 3;
+  public static final int BORDER_TOTAL = 4;
+
+  public static final int STYLE_NORMAL = 0;
+  public static final int STYLE_INVERSE = 1;
+  public static final int STYLE_MARKED = 2;
+  public static final int STYLE_INVERSE_AND_MARK = 3;
+  public static final int STYLE_TOTAL = 4;
+  public static MessageWindow sHeader;
+
+  public final static void loadUtil() {
+  }
+
+
+  public static void sleepMs(int ms) {
+    DateTimeTools.sleepForRealMs(ms);
+  }
+
+  public static WinMgr winMgr() {
+    return WinMgr.SHARED_INSTANCE;
+  }
+
+  public static final JSMap db(Object obj) {
+    var m = map();
+    if (obj == null)
+      m.put("", "NULL");
+    else {
+      m.put("str", obj.toString());
+      m.put("class", obj.getClass().getName());
+    }
+    return m;
+  }
+
+  public static String randomText(int maxLength, boolean withLinefeeds) {
+    StringBuilder sb = new StringBuilder();
+    Random r = random();
+    int len = (int) Math.abs(r.nextGaussian() * maxLength);
+    while (sb.length() < len) {
+      int wordSize = r.nextInt(8) + 2;
+      if (withLinefeeds && r.nextInt(4) == 0)
+        sb.append('\n');
+      else
+        sb.append(' ');
+      String sample = "orhxxidfusuytelrcfdlordburswfxzjfjllppdsywgsw"
+          + "kvukrammvxvsjzqwplxcpkoekiznlgsgjfonlugreiqvtvpjgrqotzu";
+      int cursor = r.nextInt(sample.length() - wordSize);
+      sb.append(sample.substring(cursor, cursor + wordSize));
+    }
+    return sb.toString().trim();
+  }
+
+  public static Random random() {
+    return sRandom;
+  }
+  private static Random sRandom = new Random(1965);
+  public static final FocusManager focusManager() {
+    return FocusManager.SHARED_INSTANCE;
+  }
+
+  public static final FocusHandler focus() {
+    return focusManager().focus();
+  }
+
+
+
+
+  public static boolean quitCommand(KeyEvent k) {
+    alert("!can't seem to use command keys reliably, so have user ctrl-c out of program");
+    return false;
+  }
+
+  private static TvConfig sConfig;
+
+  public static void setUtilConfig(TvConfig config) {
+    sConfig = config.build();
+  }
+
+  public static TvConfig bkConfig() {
+    return sConfig;
+  }
+
+}
