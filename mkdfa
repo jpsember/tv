@@ -1,0 +1,4 @@
+#!/usr/bin/env bash
+set -eu
+
+(cd dfas; gen_dfa.sh)

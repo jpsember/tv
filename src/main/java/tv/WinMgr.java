@@ -171,12 +171,17 @@ public class WinMgr extends BaseObject {
   }
 
   public void mainLoop() {
+    int k = 0;
+    setFooterMessage("Hello there!");
     while (isOpen()) {
       update();
       sleepMs(30);
-//      updateFooterMessage();
+      updateFooterMessage();
       if (quitRequested())
         close();
+      if (++k % 60 == 0) {
+        setFooterMessage("k =", k);
+      }
     }
   }
 
@@ -192,23 +197,32 @@ public class WinMgr extends BaseObject {
 
         boolean processed = false;
 
+        pr("key:",key);
         switch (key.toString()) {
-        case KeyEvent.QUIT:
-          quit();
-          return;
-        case KeyEvent.ESCAPE:
-          if (focusManager().popIfPossible()) {
-            processed = true;
-          }
-          break;
-        default:
+          case KeyEvent.QUIT:
+            quit();
+            return;
+          case KeyEvent.ESCAPE:
+            if (focusManager().popIfPossible()) {
+              processed = true;
+            } else {
+              alert("quitting on escape");
+              quit();
+            }
+            break;
+          default:
 //          if (focusManager().processUndoKeys(key))
 //            processed = true;
-          break;
+            break;
         }
 
         if (!processed) {
-          focusManager().focus().processKeyEvent(key);
+          var f = focusManager().focus();
+          if (f == null) {
+            pr("There is no focus!");
+          } else {
+            f.processKeyEvent(key);
+          }
         }
       }
 
@@ -263,9 +277,9 @@ public class WinMgr extends BaseObject {
   /**
    * If a view's layout is invalid, calls its layout() method, and invalidates
    * its paint.
-   * 
+   *
    * If the view's paint is invalid, renders it.
-   * 
+   *
    * Recursively processes all child views in this manner as well.
    */
   private void updateView(JWindow w) {

@@ -36,7 +36,7 @@ public class TvOper extends AppOper
   @Override
   public TvConfig config() {
     if (mConfig == null) {
-      mConfig = (TvConfig) super.config();
+      mConfig = super.config();
     }
     return mConfig;
   }
@@ -52,6 +52,7 @@ public class TvOper extends AppOper
 
     try {
       mgr.open();
+      mAccounts = new TextWindow( );
 
       // Construct root container
       mgr.pushContainer();
@@ -65,31 +66,32 @@ public class TvOper extends AppOper
       }
 
       {
-        // Create a container that has a horizontal layout, with accounts on the left
-        mgr.horz().pushContainer();
+        // Create a container for the text file
+      var c =  mgr.horz().pushContainer();
 
-//        {
-//          mgr.pct(30);
-//          mgr.thickBorder();
-//          mgr.window(mAccounts);
-//        }
         {
-          mgr.pct(70);
-          var c = new JContainer();
-          mgr.pushContainer(c);
+          mgr.pct(30);
+          mgr.thickBorder();
+          mgr.window(mAccounts);
           focusManager().setTopLevelContainer(c);
-          mgr.popContainer();
         }
+//        {
+//          mgr.pct(70);
+//         var c = new JContainer();
+//          mgr.pushContainer(c);
+//          focusManager().setTopLevelContainer(c);
+//          mgr.popContainer();
+//        }
 
         mgr.popContainer();
       }
 
-//      // Add a small footer
-//      {
-//        var h = new MessageWindow();
-//        Util.sFooter = h;
-//        mgr.chars(1).window(h);
-//      }
+      // Add a small footer
+      {
+        var h = new MessageWindow();
+        Util.sFooter = h;
+        mgr.chars(1).window(h);
+      }
 
       mgr.popContainer();
       mgr.doneConstruction();
@@ -101,4 +103,5 @@ public class TvOper extends AppOper
 
   private TvConfig mConfig;
 
+        private TextWindow mAccounts;
 }

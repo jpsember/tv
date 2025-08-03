@@ -39,7 +39,6 @@ public final class Util {
   public static final int STYLE_MARKED = 2;
   public static final int STYLE_INVERSE_AND_MARK = 3;
   public static final int STYLE_TOTAL = 4;
-  public static MessageWindow sHeader;
 
   public final static void loadUtil() {
   }
@@ -110,6 +109,35 @@ public final class Util {
 
   public static TvConfig bkConfig() {
     return sConfig;
+  }
+
+  public static MessageWindow sHeader, sFooter;
+
+
+  private static long sPendingDuration;
+  private static long sMessageExpTime;
+
+  public static void setMessageDuration(long seconds) {
+    sPendingDuration = seconds * 1000;
+  }
+
+  public static void setFooterMessage(Object... msg) {
+    var s = BasePrinter.toString(msg);
+    sMessageExpTime = 0;
+    if (sPendingDuration > 0)
+      sMessageExpTime = System.currentTimeMillis() + sPendingDuration;
+    sPendingDuration = 0;
+    if (sFooter != null) {
+      sFooter.setMessageAt(MessageWindow.LEFT, s);
+    } else {
+      pr(s);
+    }
+  }
+
+  public static void updateFooterMessage() {
+    if (sMessageExpTime != 0 && System.currentTimeMillis() >= sMessageExpTime) {
+      setFooterMessage();
+    }
   }
 
 }

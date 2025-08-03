@@ -1,0 +1,10 @@
+# This is a placeholder, not yet used
+
+WS:  $_WHITESPACE
+
+COMMA: $_COMMA
+STRING: $_STRING
+
+
+# node_id,"description","geom"
+# "ff80781c-8276-18e0-ab5a-a96bc95efcdc","Beaconsfield Rd Between Wakesiah Ave And Terminus","LINESTRING(-123.96097420240324 49.164693704647505,-123.95928877602421 49.164711870770134,-123.95893224352082 49.164657372382294)"
