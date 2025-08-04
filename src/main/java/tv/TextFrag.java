@@ -5,5 +5,8 @@ class TextFrag {
   int mAddress; // address within Lexer table
   int mY;       // row
   int mX;       // column
-  PlacedStr[] strs; // If null, not visible
+  int strStart;
+  int strCount;
+
+//  PlacedStr[] strs; // If null, not visible
 }

@@ -3,6 +3,7 @@
 # access to the screen from there.
 #
 
+mvn compile
 
 java \
 -Dfile.encoding=UTF-8 \

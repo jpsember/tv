@@ -4,7 +4,6 @@ package tv;
 import js.file.Files;
 import js.parsing.DFA;
 import js.parsing.DFACache;
-import js.parsing.Lexeme;
 import js.parsing.Lexer;
 
 import java.io.File;
@@ -48,6 +47,8 @@ public class TextWindow extends JWindow implements FocusHandler {
     prepareToRender();
     var r = Render.SHARED_INSTANCE;
     var clip = r.clipBounds();
+
+    pr("clip:",clip);
   }
 
   private void prepareToRender() {
@@ -174,29 +175,6 @@ public class TextWindow extends JWindow implements FocusHandler {
     var dfa = DFACache.SHARED_INSTANCE.forTokenDefinitions(lexDefinitions);
     mDfa = dfa;
     return mDfa;
-
-//    // Get hash code as fingerprint
-//    var fingerprint = lexDefinitions.hashCode();
-//    var dfaName = "."+fingerprint+".dfa";
-//    var cacheFile = new File("example/"+dfaName);
-//    if (!cacheFile.exists()) {
-//      var workDir = Files.parent(cacheFile);
-//      var tmpSource = new File(workDir,"_tokens_tmp_.rxp");
-//      var fs = Files.S;
-//      fs.writeString(tmpSource, lexDefinitions);
-//
-//
-//      var sc = new SystemCall();
-//
-//
-//
-//      sc.directory(workDir);
-//      sc.arg(new File(Files.homeDirectory(),"bin/dfa"));
-//      sc.arg("input",tmpSource);
-//      sc.arg("output",cacheFile.getName());
-//      sc.assertSuccess();
-//    }
-
   }
 
   public String extractLexemeDefinitions(String text) {
@@ -206,6 +184,7 @@ public class TextWindow extends JWindow implements FocusHandler {
 
 
   private void prepareLexemes(String content) {
+    mPlacedStrs.clear();
     var s = new Lexer(getTextDFA()).withNoSkip().withAcceptUnknownTokens().withText(content);
     List<TextFrag> frags = arrayList();
     var addr = s.filteredAddresses();
@@ -213,21 +192,18 @@ public class TextWindow extends JWindow implements FocusHandler {
       var frag = buildTextFrag(ad);
       frags.add(frag);
     }
-//    while (s.hasNext()) {
-//      var lexeme = s.read();
-//      var frag = buildTextFrag(lexeme);
-//      frags.add(frag);
-//    }
+
     layoutFrags(s.inputBytes(), s.tokenInfo(), frags);
 
-    pr("layoutFrags produced:");
+    //pr("layoutFrags produced:");
     for (var x : frags) {
-      pr("addr:",x.mAddress);
-      if (x.strs != null) {
-        pr("strs:");
-        for (var st : x.strs) {
-        pr(INDENT,st.y,st.x,quote(st.str));
-        }
+      var count = x.strCount;
+      if (count == 0) continue;
+//      pr("addr:",x.mAddress);
+      int start = x.strStart;
+      for (int i = start; i < start+count; i++) {
+        var st = mPlacedStrs.get(i);
+//        pr(INDENT,st.y,st.x,quote(st.str));
       }
     }
   }
@@ -247,9 +223,8 @@ public class TextWindow extends JWindow implements FocusHandler {
     for (var f : frags) {
       f.mX = x;
       f.mY = y;
-      f.strs = null;
+      f.strStart = mPlacedStrs.size();
 
-      List<PlacedStr> pstrs = arrayList();
 
       var ad = f.mAddress;
 
@@ -274,7 +249,9 @@ public class TextWindow extends JWindow implements FocusHandler {
             ps.str = sb.toString();
             ps.x = x;
             ps.y = y;
-            pstrs.add(ps);
+            //var index = sPlacedStrs.size();
+            mPlacedStrs.add(ps);
+            //pstrs.add(ps);
             sb.setLength(0);
           }
           y++;
@@ -289,13 +266,14 @@ public class TextWindow extends JWindow implements FocusHandler {
         ps.str = sb.toString();
         ps.x = x;
         ps.y = y;
-        pstrs.add(ps);
+        mPlacedStrs.add(ps);
         x += sb.length();
       }
-      if (!pstrs.isEmpty()) {
-        f.strs = pstrs.toArray(new PlacedStr[0]); // <- optimize this later
-      }
+      f.strCount = mPlacedStrs.size() - f.strStart;
     }
   }
+
+  private List<PlacedStr> mPlacedStrs = arrayList();
+
 }
 
