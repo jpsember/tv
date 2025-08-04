@@ -1,7 +1,11 @@
-# This is a script to run the program from the command line,
+#!/usr/bin/env bash
+set -eu
+
+# This is a script to compile and run the program from the command line,
 # since running it within thd IDE fails due to the lanterna library not having
 # access to the screen from there.
 #
+
 
 mvn compile
 

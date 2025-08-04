@@ -5,8 +5,9 @@ class TextFrag {
   int mAddress; // address within Lexer table
   int mY;       // row
   int mX;       // column
-  int strStart;
-  int strCount;
 
-//  PlacedStr[] strs; // If null, not visible
+  // Index into the buffer where this fragment's strings start
+  int strStart;
+  // Number of strings
+  int strCount;
 }

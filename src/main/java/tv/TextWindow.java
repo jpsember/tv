@@ -48,7 +48,68 @@ public class TextWindow extends JWindow implements FocusHandler {
     var r = Render.SHARED_INSTANCE;
     var clip = r.clipBounds();
 
-    pr("clip:",clip);
+    var transformStringToClip = clip.location().negate();
+
+    // Do our calculations in string space, then translate when rendering
+    int syMin = 0;
+    int syMax = clip.height;
+    int sxMin = 0;
+    int sxMax = clip.width;
+
+
+//    var maxY = clip.endY() - clip.y;
+
+    pr("clip:", clip);
+
+    todo("!more clever way of clipping, scrolling to particular start row etc");
+    todo("better to render to a grid of bytes, then render the whole screen with a few calls to lanterna");
+
+    for (var f : mFrags) {
+      if (f.mY >= syMax) break;
+      for (int j = 0; j < f.strCount; j++) {
+        int sa = j + f.strStart;
+        var ps = mPlacedStrs.get(sa);
+        var sy = ps.y;
+        if (sy < syMin || sy >= syMax) continue;
+        var x0 = ps.x;
+        var x1 = ps.x + ps.str.length();
+
+        var cx0 = Math.max(x0, sxMin);
+        var cx1 = Math.min(x1, sxMax);
+        if (cx0 >= cx1) continue;
+
+        WinMgr.setRandomColor();
+        var text = ps.str;
+        for (int k = cx0; k < cx1; k++) {
+          var strIndex = k - x0;
+
+
+          r.drawString(cx0 + transformStringToClip.x, sy + transformStringToClip.y, text.length(), text.substring(cx0 - x0, cx1 - x0));
+        }
+      }
+
+      // WinMgr.setDefaultColor();
+
+    }
+
+
+
+    todo("figure out how to add color");
+
+    try {
+      var t = winMgr().terminal();
+
+      t.setCursorPosition(10, 5);
+      t.putCharacter('H');
+      t.putCharacter('e');
+      t.putCharacter('l');
+      t.putCharacter('l');
+      t.putCharacter('o');
+      t.putCharacter('!');
+      t.setCursorPosition(0, 0);
+    } catch (Throwable tt) {
+      throw asRuntimeException(tt);
+    }
   }
 
   private void prepareToRender() {
@@ -110,8 +171,12 @@ public class TextWindow extends JWindow implements FocusHandler {
         winMgr().quit();
         break;
 
+      case KeyEvent.ARROW_RIGHT:
+        repaint();
+        break;
+
       case KeyEvent.RETURN:
-//        if (a != null) {
+        //        if (a != null) {
 //          mListener.viewAccount(a);
 //        }
         break;
@@ -186,22 +251,22 @@ public class TextWindow extends JWindow implements FocusHandler {
   private void prepareLexemes(String content) {
     mPlacedStrs.clear();
     var s = new Lexer(getTextDFA()).withNoSkip().withAcceptUnknownTokens().withText(content);
-    List<TextFrag> frags = arrayList();
+    mFrags.clear();
     var addr = s.filteredAddresses();
     for (var ad : addr) {
       var frag = buildTextFrag(ad);
-      frags.add(frag);
+      mFrags.add(frag);
     }
 
-    layoutFrags(s.inputBytes(), s.tokenInfo(), frags);
+    layoutFrags(s.inputBytes(), s.tokenInfo());
 
     //pr("layoutFrags produced:");
-    for (var x : frags) {
+    for (var x : mFrags) {
       var count = x.strCount;
       if (count == 0) continue;
 //      pr("addr:",x.mAddress);
       int start = x.strStart;
-      for (int i = start; i < start+count; i++) {
+      for (int i = start; i < start + count; i++) {
         var st = mPlacedStrs.get(i);
 //        pr(INDENT,st.y,st.x,quote(st.str));
       }
@@ -214,7 +279,8 @@ public class TextWindow extends JWindow implements FocusHandler {
     return f;
   }
 
-  private void layoutFrags(byte[] inputBytes, int[] lexInfo, List<TextFrag> frags) {
+  private void layoutFrags(byte[] inputBytes, int[] lexInfo) {
+    var frags = mFrags;
 
     var sb = new StringBuilder();
 
@@ -236,7 +302,7 @@ public class TextWindow extends JWindow implements FocusHandler {
 
       if (!visible) continue;
 
-      var strStart = lexInfo[ad+Lexer.F_TOKEN_OFFSET];
+      var strStart = lexInfo[ad + Lexer.F_TOKEN_OFFSET];
       var strLen = lexInfo[ad + Lexer.TOKEN_INFO_REC_LEN + Lexer.F_TOKEN_OFFSET] - strStart;
 
       sb.setLength(0);
@@ -259,7 +325,7 @@ public class TextWindow extends JWindow implements FocusHandler {
           // We may do special formatting later, e.g. for pretty printing or whatever
           continue;
         }
-        sb.append((char)ch);
+        sb.append((char) ch);
       }
       if (sb.length() != 0) {
         var ps = new PlacedStr();
@@ -274,6 +340,6 @@ public class TextWindow extends JWindow implements FocusHandler {
   }
 
   private List<PlacedStr> mPlacedStrs = arrayList();
-
+  private List<TextFrag> mFrags = arrayList();
 }
 
