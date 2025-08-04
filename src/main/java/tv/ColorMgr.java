@@ -8,6 +8,7 @@ import com.googlecode.lanterna.terminal.Terminal;
 import js.geometry.MyMath;
 
 import java.awt.*;
+import java.io.IOException;
 
 import static tv.Util.*;
 
@@ -77,6 +78,21 @@ public final class ColorMgr {
 
   private TextColor mNormBgnd, mNormFgnd;
   private Terminal mTerminal;
+
+  public void setColors(int bgndIndex, int fgndIndex) {
+    bgndIndex = random().nextInt(sColors.length);
+    fgndIndex = random().nextInt(sColors.length);
+    if (bgndIndex == fgndIndex) {
+      if (bgndIndex == 0) bgndIndex++;
+      else bgndIndex--;
+    }
+    try {
+      mTerminal.setBackgroundColor(sColors[bgndIndex]);
+      mTerminal.setForegroundColor(sColors[fgndIndex]);
+    } catch (IOException e) {
+      throw asRuntimeException(e);
+    }
+  }
 
 
   /**

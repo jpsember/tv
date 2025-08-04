@@ -7,6 +7,7 @@ import js.parsing.DFACache;
 import js.parsing.Lexer;
 
 import java.io.File;
+import java.io.IOException;
 import java.util.List;
 
 import static tv.Util.BORDER_THICK;
@@ -42,7 +43,6 @@ public class TextWindow extends JWindow implements FocusHandler {
   }
 
 
-
   @Override
   public void paint() {
     prepareToRender();
@@ -63,6 +63,11 @@ public class TextWindow extends JWindow implements FocusHandler {
       for (int j = 0; j < f.strCount; j++) {
         int sa = j + f.strStart;
         var ps = mPlacedStrs.get(sa);
+        plotString(ps.str, ps.x, ps.y);
+
+        if (true) continue;
+
+
         var sy = ps.y;
         if (sy < syMin || sy >= syMax) continue;
         var x0 = ps.x;
@@ -72,6 +77,7 @@ public class TextWindow extends JWindow implements FocusHandler {
         var cx1 = Math.min(x1, sxMax);
         if (cx0 >= cx1) continue;
 
+
         var text = ps.str;
         for (int k = cx0; k < cx1; k++) {
           var strIndex = k - x0;
@@ -79,6 +85,46 @@ public class TextWindow extends JWindow implements FocusHandler {
           r.drawString(cx0 + transformStringToClip.x, sy + transformStringToClip.y, text.length(), text.substring(cx0 - x0, cx1 - x0));
         }
       }
+    }
+
+    // Render the grid
+
+
+    try {
+      var t = winMgr().terminal();
+      char prevColor = (char) -1;
+      var j = 0;
+      var sb = new StringBuilder();
+      for (int y = 0; y < mClip.height; y++) {
+        t.setCursorPosition( mClip.x,y);
+        for (int x = 0; x < mClip.width; x++) {
+          var col = mCharGrid[j+0];
+          var chr = mCharGrid[j+1];
+          j += 2;
+
+          if (col != prevColor) {
+            if (sb.length() != 0) {
+              pr("plotting:",sb);
+              t.putString(sb.toString());
+              sb.setLength(0);
+            }
+            prevColor = col;
+            int fgndIndex = ((int)col) & 0xff;
+            int bgndIndex = (((int)col) >> 8) & 0xff;
+            ColorMgr.SHARED_INSTANCE.setColors(bgndIndex, fgndIndex);
+          }
+          sb.append(chr);
+        }
+        if (sb.length() != 0) {
+          pr("finished row, plotting:",sb);
+          t.putString(sb.toString());
+          sb.setLength(0);
+        }
+        prevColor = (char) -1;
+      }
+
+    } catch (IOException e) {
+      throw asRuntimeException(e);
     }
 
     try {
@@ -109,6 +155,7 @@ public class TextWindow extends JWindow implements FocusHandler {
       return;
     var r = Render.SHARED_INSTANCE;
     mClip = r.clipBounds();
+    mCharGrid = new char[mClip.size().product() * 2];
     mPrepared = true;
   }
 
@@ -333,7 +380,35 @@ public class TextWindow extends JWindow implements FocusHandler {
     }
   }
 
+
+  private void plotString(String str, int wx, int sy) {
+
+    var c = mClip;
+    if (sy < c.y || sy >= c.endY()) return;
+
+    var x0 = wx;
+    var x1 = wx + str.length();
+
+    var cx0 = Math.max(x0, 0);
+    var cx1 = Math.min(x1, c.endX());
+    if (cx0 >= cx1) return;
+
+    int charsPerRow = c.width * 2;
+    int gridIndex = sy * charsPerRow;
+    var grid = mCharGrid;
+
+    for (int k = cx0; k < cx1; k++) {
+      grid[gridIndex] = 0; // color?
+      grid[gridIndex + 1] = str.charAt(k - x0);
+      gridIndex += 2;
+    }
+  }
+
+
   private List<PlacedStr> mPlacedStrs = arrayList();
   private List<TextFrag> mFrags = arrayList();
+
+
+  private char[] mCharGrid;
 }
 
