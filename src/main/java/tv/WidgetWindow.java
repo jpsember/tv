@@ -81,9 +81,9 @@ public class WidgetWindow extends JWindow implements FocusHandler {
     var valueWidth = mWidth;
 
     if (isButton()) {
-      r.pushStyle(hf ? STYLE_INVERSE : STYLE_NORMAL);
+//      r.pushStyle(hf ? STYLE_INVERSE : STYLE_NORMAL);
       r.drawString(b.x + labelWidth + SEP, b.y, labelWidth, mLabel);
-      r.pop();
+//      r.pop();
     } else {
 
       var ef = mLabel + ":";
@@ -111,9 +111,9 @@ public class WidgetWindow extends JWindow implements FocusHandler {
           winMgr().setCursorPosition(lx + curPos, ly);
         }
       }
-      r.pushStyle(style);
+     // r.pushStyle(style);
       r.drawString(lx, ly, valueWidth, s);
-      r.pop();
+//      r.pop();
     }
 
   }

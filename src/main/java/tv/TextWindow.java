@@ -1,6 +1,5 @@
 package tv;
 
-
 import js.file.Files;
 import js.parsing.DFA;
 import js.parsing.DFACache;
@@ -78,12 +77,9 @@ public class TextWindow extends JWindow implements FocusHandler {
         var cx1 = Math.min(x1, sxMax);
         if (cx0 >= cx1) continue;
 
-        WinMgr.setRandomColor();
         var text = ps.str;
         for (int k = cx0; k < cx1; k++) {
           var strIndex = k - x0;
-
-
           r.drawString(cx0 + transformStringToClip.x, sy + transformStringToClip.y, text.length(), text.substring(cx0 - x0, cx1 - x0));
         }
       }
@@ -97,6 +93,10 @@ public class TextWindow extends JWindow implements FocusHandler {
     todo("figure out how to add color");
 
     try {
+
+      var cm = ColorMgr.SHARED_INSTANCE;
+      cm.setRandom();
+
       var t = winMgr().terminal();
 
       t.setCursorPosition(10, 5);
@@ -107,6 +107,9 @@ public class TextWindow extends JWindow implements FocusHandler {
       t.putCharacter('o');
       t.putCharacter('!');
       t.setCursorPosition(0, 0);
+
+      cm.setDefault();
+
     } catch (Throwable tt) {
       throw asRuntimeException(tt);
     }

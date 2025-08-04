@@ -402,41 +402,10 @@ public class WinMgr extends BaseObject {
 
   private IRect mInvalidRect;
 
-
-  private static int kk;
-
-  private static TextColor kr[] = {
-      TextColor.ANSI.GREEN,
-      TextColor.ANSI.MAGENTA,
-      TextColor.ANSI.RED,
-  };
-
-//  public static void setRandomColor() {
-//    var t = SHARED_INSTANCE.mTerminal;
-//    try {
-//      kk++;
-//      var k = kk % kr.length;
-//      t.setForegroundColor(kr[k]);
-//      t.setBackgroundColor(TextColor.ANSI.BLUE);
-//      pr("set random color:",k);
-//    } catch (Throwable tt) {
-//      throw asRuntimeException(tt);
-//    }
-//  }
-
   public Terminal terminal() {
     return this.mTerminal;
   }
 
-  public static void setDefaultColor() {
-    var t = SHARED_INSTANCE.mTerminal;
-    try {
-      t.setForegroundColor(TextColor.ANSI.DEFAULT);
-      t.setBackgroundColor(TextColor.ANSI.DEFAULT);
-    } catch (Throwable tt) {
-      throw asRuntimeException(tt);
-    }
-  }
   // ------------------------------------------------------------------
   // Trees of JContainers
   // ------------------------------------------------------------------

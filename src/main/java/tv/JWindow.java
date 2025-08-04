@@ -175,8 +175,8 @@ public class JWindow extends BaseObject {
         var w = WinMgr.SHARED_INSTANCE;
 //        w.setRandomColor();
 
-        var c = ColorMgr.DEFAULT_INSTANCE;
-        c.setRandomColor();
+        var c = ColorMgr.SHARED_INSTANCE;
+        c.setRandom();
 
         var t = w.terminal();
 
@@ -189,7 +189,7 @@ public class JWindow extends BaseObject {
         t.putCharacter('o');
         t.putCharacter('!');
         t.setCursorPosition(0, 0);
-        w.setDefaultColor();
+        c.setDefault();
       } catch (Throwable t) {
         throw asRuntimeException(t);
       }

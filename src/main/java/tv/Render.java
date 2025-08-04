@@ -3,8 +3,6 @@ package tv;
 import static tv.Util.*;
 import static js.base.Tools.*;
 
-import java.util.Stack;
-
 import com.googlecode.lanterna.Symbols;
 import com.googlecode.lanterna.TerminalPosition;
 import com.googlecode.lanterna.TerminalSize;
@@ -33,11 +31,6 @@ public final class Render extends BaseObject {
   public Render setClipBounds(IRect r) {
     mClipBounds = r;
     return this;
-  }
-
-  @Deprecated
-  public JWindow window() {
-    return mWindow;
   }
 
   public Render clearRow(int y, char character) {
@@ -138,18 +131,11 @@ public final class Render extends BaseObject {
   private void auxPrepare(JWindow window, boolean partial) {
     mWindow = window;
     mClipBounds = window.totalBounds();
-    mStack = new Stack<>();
     var t = winMgr().abstractScreen().newTextGraphics();
-    if (mNormBgnd == null) {
-      mNormBgnd = t.getBackgroundColor();
-      mNormFgnd = t.getForegroundColor();
-    }
+    ColorMgr.SHARED_INSTANCE.prepareRender(t);
     mTextGraphics = t;
     mPartial = partial;
   }
-
-  private TextColor mNormFgnd;
-  private TextColor mNormBgnd;
 
   static Render unprepare() {
     SHARED_INSTANCE.auxUnprepare();
@@ -157,9 +143,6 @@ public final class Render extends BaseObject {
   }
 
   private void auxUnprepare() {
-    if (!mStack.isEmpty())
-      alert("Render.stack isn't empty");
-    mStack = null;
     mWindow = null;
     mClipBounds = null;
     mTextGraphics = null;
@@ -181,43 +164,10 @@ public final class Render extends BaseObject {
     return IRect.rectContainingPoints(p1, p2);
   }
 
-  public Render pushStyle(int style) {
-    checkArgument(style >= 0 && style < STYLE_TOTAL);
-    mStack.push(mTextGraphics);
-    var t = winMgr().abstractScreen().newTextGraphics();
-
-    switch (style) {
-    case STYLE_INVERSE:
-      t.setForegroundColor(TextColor.ANSI.WHITE_BRIGHT);
-      t.setBackgroundColor(TextColor.ANSI.BLACK);
-      break;
-    case STYLE_NORMAL:
-      t.setForegroundColor(mNormFgnd);
-      t.setBackgroundColor(mNormBgnd);
-      break;
-    case STYLE_MARKED:
-      t.setForegroundColor(TextColor.ANSI.WHITE);
-      t.setBackgroundColor(TextColor.ANSI.BLUE);
-      break;
-    case STYLE_INVERSE_AND_MARK:
-      t.setForegroundColor(TextColor.ANSI.WHITE_BRIGHT);
-      t.setBackgroundColor(TextColor.ANSI.BLUE_BRIGHT);
-      break;
-    }
-    mTextGraphics = t;
-    return this;
-  }
-
-  public Render pop() {
-    mTextGraphics = mStack.pop();
-    return this;
-  }
-
   public boolean partial() {
     return mPartial;
   }
 
-  private Stack<TextGraphics> mStack = new Stack<>();
   private IRect mClipBounds;
   private JWindow mWindow;
   private TextGraphics mTextGraphics;
