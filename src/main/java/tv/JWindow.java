@@ -155,7 +155,6 @@ public class JWindow extends BaseObject {
    * Render the window onto the screen
    */
   void render(boolean partial) {
-    pr("JWindow render, partial:",partial);
     var r = Render.prepare(this, partial);
 
     var totalBounds = totalBounds();
@@ -168,34 +167,8 @@ public class JWindow extends BaseObject {
         r.drawRect(totalBounds, btype);
       r.setClipBounds(calcContentBounds());
     }
-
-
-    if (alert("not rendering, doing color experiment")) {
-      try {
-        var w = WinMgr.SHARED_INSTANCE;
-//        w.setRandomColor();
-
-        var c = ColorMgr.SHARED_INSTANCE;
-        c.setRandom();
-
-        var t = w.terminal();
-
-        //t.setBackgroundColor();
-        t.setCursorPosition(10, 5);
-        t.putCharacter('H');
-        t.putCharacter('e');
-        t.putCharacter('l');
-        t.putCharacter('l');
-        t.putCharacter('o');
-        t.putCharacter('!');
-        t.setCursorPosition(0, 0);
-        c.setDefault();
-      } catch (Throwable t) {
-        throw asRuntimeException(t);
-      }
-    } else
-      paint();
-    r = Render.unprepare();
+    paint();
+    Render.unprepare();
   }
 
   IRect calcContentBounds() {

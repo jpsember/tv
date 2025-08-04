@@ -1,6 +1,7 @@
 package tv;
 
 import js.file.Files;
+import js.geometry.IRect;
 import js.parsing.DFA;
 import js.parsing.DFACache;
 import js.parsing.Lexer;
@@ -41,24 +42,18 @@ public class TextWindow extends JWindow implements FocusHandler {
   }
 
 
+
   @Override
   public void paint() {
     prepareToRender();
-    var r = Render.SHARED_INSTANCE;
-    var clip = r.clipBounds();
 
-    var transformStringToClip = clip.location().negate();
+    var transformStringToClip = mClip.location().negate();
 
     // Do our calculations in string space, then translate when rendering
     int syMin = 0;
-    int syMax = clip.height;
+    int syMax = mClip.height;
     int sxMin = 0;
-    int sxMax = clip.width;
-
-
-//    var maxY = clip.endY() - clip.y;
-
-    pr("clip:", clip);
+    int sxMax = mClip.width;
 
     todo("!more clever way of clipping, scrolling to particular start row etc");
     todo("better to render to a grid of bytes, then render the whole screen with a few calls to lanterna");
@@ -80,17 +75,11 @@ public class TextWindow extends JWindow implements FocusHandler {
         var text = ps.str;
         for (int k = cx0; k < cx1; k++) {
           var strIndex = k - x0;
+          var r = Render.SHARED_INSTANCE;
           r.drawString(cx0 + transformStringToClip.x, sy + transformStringToClip.y, text.length(), text.substring(cx0 - x0, cx1 - x0));
         }
       }
-
-      // WinMgr.setDefaultColor();
-
     }
-
-
-
-    todo("figure out how to add color");
 
     try {
 
@@ -118,11 +107,13 @@ public class TextWindow extends JWindow implements FocusHandler {
   private void prepareToRender() {
     if (mPrepared)
       return;
-
+    var r = Render.SHARED_INSTANCE;
+    mClip = r.clipBounds();
     mPrepared = true;
   }
 
   private boolean mPrepared;
+  private IRect mClip;
 
 
   @Override

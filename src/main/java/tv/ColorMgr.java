@@ -8,6 +8,7 @@ import com.googlecode.lanterna.terminal.Terminal;
 import js.geometry.MyMath;
 
 import java.awt.*;
+
 import static tv.Util.*;
 
 public final class ColorMgr {
@@ -16,7 +17,6 @@ public final class ColorMgr {
 
   private ColorMgr() {
   }
-
 
   public void setRandom() {
     setBgndColor(mNormBgnd);
