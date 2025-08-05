@@ -1,2 +1,3 @@
-touch log.txt
-tail -f log.txt
+(cd example; \
+touch log.txt; \
+tail -f log.txt )

@@ -9,6 +9,8 @@ import js.geometry.MyMath;
 
 import java.awt.*;
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
 
 import static tv.Util.*;
 
@@ -21,7 +23,7 @@ public final class ColorMgr {
 
   public void setRandom() {
     setBgndColor(mNormBgnd);
-    setFgndColor(sColors[random().nextInt(sColors.length)]);
+    setFgndColor(MyMath.randomElement(random(), mColors)); //sColors[random().nextInt(sColors.length)]);
   }
 
   public void setDefault() {
@@ -52,6 +54,7 @@ public final class ColorMgr {
     mNormFgnd = t.getForegroundColor();
   }
 
+
   private static TextColor cl(double r, double g, double b) {
     return new OurTextColor(round(r), round(g), round(b));
   }
@@ -61,39 +64,56 @@ public final class ColorMgr {
     return MyMath.clamp((int) x, 0, 255);
   }
 
-  public static final TextColor BLUE = cl(0, 0, 1), //
-      RED = cl(1, 0, 0), //
-      GREEN = cl(0, 1, 0), //
-      DARK_RED = cl(.5, 0, 0), //
-      DARK_BLUE = cl(0, 0, .5), //
-      DARK_GREEN = cl(0, .5, 0), //
-  //
-  BLACK = cl(0, 0, 0);
-  private static final TextColor sColors[] = {
-      TextColor.ANSI.BLUE,
-      TextColor.ANSI.CYAN_BRIGHT,
-      BLUE, RED, GREEN,
-      DARK_BLUE, DARK_RED, DARK_GREEN,
-  };
+//  public static final TextColor BLUE = cl(0, 0, 1), //
+//      RED = cl(1, 0, 0), //
+//      GREEN = cl(0, 1, 0), //
+//      DARK_RED = cl(.5, 0, 0), //
+//      DARK_BLUE = cl(0, 0, .5), //
+//      DARK_GREEN = cl(0, .5, 0), //
+//  //
+//  BLACK = cl(0, 0, 0);
+//  private static final TextColor sColors[] = {
+//      TextColor.ANSI.BLUE,
+//      TextColor.ANSI.CYAN_BRIGHT,
+//      BLUE, RED, GREEN,
+//      DARK_BLUE, DARK_RED, DARK_GREEN,
+//  };
 
   private TextColor mNormBgnd, mNormFgnd;
   private Terminal mTerminal;
 
   public void setColors(int bgndIndex, int fgndIndex) {
-    bgndIndex = random().nextInt(sColors.length);
-    fgndIndex = random().nextInt(sColors.length);
-    if (bgndIndex == fgndIndex) {
-      if (bgndIndex == 0) bgndIndex++;
-      else bgndIndex--;
-    }
+////    bgndIndex = random().nextInt(sColors.length);
+////    fgndIndex = random().nextInt(sColors.length);
+//    if (bgndIndex == fgndIndex) {
+//      if (bgndIndex == 0) bgndIndex++;
+//      else bgndIndex--;
+//    }
     try {
-      mTerminal.setBackgroundColor(sColors[bgndIndex]);
-      mTerminal.setForegroundColor(sColors[fgndIndex]);
+      mTerminal.setBackgroundColor(mColors.get(bgndIndex));
+      mTerminal.setForegroundColor(mColors.get(fgndIndex));
     } catch (IOException e) {
       throw asRuntimeException(e);
     }
   }
 
+  public TextColor parseColor(String s) {
+    try {
+      checkArgument(s.length() == 6, s);
+      var value = Integer.parseInt(s, 16);
+      return cl(((value >> 16) & 0xff) / 255.0,
+          ((value >> 8) & 0xff) / 255.0,
+          (value & 0xff) / 255.0);
+    } catch (Throwable t) {
+      throw badArg("trouble parsing color from:", quote(s), t.getMessage());
+    }
+  }
+
+  public void defineColors(List<TextColor> colors) {
+    mColors = new ArrayList<>(colors);
+  }
+
+  private List<TextColor> mColors;
 
   /**
    * Our implementation of the TextColor interface

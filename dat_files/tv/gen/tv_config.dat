@@ -1,5 +1,8 @@
 class {
 
+  File text_file;
+  File token_file;
+
   bool testing;
 
   // Where to write the logs (if empty, doesn't write logs anywhere)

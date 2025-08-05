@@ -8,8 +8,7 @@ import js.app.HelpFormatter;
 import js.base.BasePrinter;
 import tv.gen.TvConfig;
 
-public class TvOper extends AppOper
-      {
+public class TvOper extends AppOper {
 
   @Override
   public String userCommand() {
@@ -52,7 +51,7 @@ public class TvOper extends AppOper
 
     try {
       mgr.open();
-      mAccounts = new TextWindow( );
+      mAccounts = new TextWindow();
 
       // Construct root container
       mgr.pushContainer();
@@ -67,7 +66,7 @@ public class TvOper extends AppOper
 
       {
         // Create a container for the text file
-      var c =  mgr.horz().pushContainer();
+        var c = mgr.horz().pushContainer();
 
         {
           mgr.pct(30);
@@ -103,5 +102,5 @@ public class TvOper extends AppOper
 
   private TvConfig mConfig;
 
-        private TextWindow mAccounts;
+  private TextWindow mAccounts;
 }

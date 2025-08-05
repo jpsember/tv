@@ -2,9 +2,11 @@ package tv;
 
 class TextFrag {
   TextFrag mParent;  // Lexeme that starts this one's paragraph
-  int mAddress; // address within Lexer table
-  int mY;       // row
-  int mX;       // column
+  int mAddress;     // address within Lexer table
+  int mY;           // row
+  int mX;           // column
+
+  char colorCode;
 
   // Index into the buffer where this fragment's strings start
   int strStart;

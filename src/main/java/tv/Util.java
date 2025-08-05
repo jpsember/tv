@@ -2,29 +2,12 @@ package tv;
 
 import static js.base.Tools.*;
 
-import java.time.Instant;
-import java.time.LocalDate;
-import java.time.LocalDateTime;
-import java.time.ZoneId;
-import java.time.format.DateTimeFormatter;
-import java.time.format.DateTimeFormatterBuilder;
-import java.time.temporal.ChronoField;
-import java.util.Collection;
-import java.util.Comparator;
-import java.util.List;
 import java.util.Random;
-import java.util.Set;
 
 import tv.gen.TvConfig;
 import js.base.BasePrinter;
 import js.base.DateTimeTools;
-import js.data.DataUtil;
-import js.data.LongArray;
-import js.file.Files;
-import js.geometry.MyMath;
 import js.json.JSMap;
-import js.parsing.DFA;
-import js.parsing.Scanner;
 
 public final class Util {
 
@@ -107,7 +90,7 @@ public final class Util {
     sConfig = config.build();
   }
 
-  public static TvConfig bkConfig() {
+  public static TvConfig tvConfig() {
     return sConfig;
   }
 

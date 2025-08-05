@@ -1,0 +1,5 @@
+{
+  "text_file" : "sample.csv",
+  "log_file" : "log.txt",
+  "token_file" : "sample.rxp",
+}

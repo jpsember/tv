@@ -327,8 +327,13 @@ public class WinMgr extends BaseObject {
    * normal terminal window)
    */
   public Throwable closeIfError(Throwable t) {
-    if (t != null)
-      close();
+    if (t != null) {
+     try {
+       close();
+     } catch (Throwable t2) {
+       pr("(...ignoring exception:",t2.getMessage(),")");
+     }
+    }
     return t;
   }
 

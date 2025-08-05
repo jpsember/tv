@@ -1,5 +1,6 @@
 package tv;
 
+import com.googlecode.lanterna.TextColor;
 import js.file.Files;
 import js.geometry.IRect;
 import js.parsing.DFA;
@@ -10,8 +11,7 @@ import java.io.File;
 import java.io.IOException;
 import java.util.List;
 
-import static tv.Util.BORDER_THICK;
-import static tv.Util.winMgr;
+import static tv.Util.*;
 
 import static js.base.Tools.*;
 
@@ -21,17 +21,11 @@ public class TextWindow extends JWindow implements FocusHandler {
     setBorder(BORDER_THICK);
 
     // Load the sample text file
-    var f = new File("example/sample.csv");
-    String content;
-    if (!f.exists()) {
-      alert("Can't find:", f);
-      content = "cannot find: " + f;
-    } else {
-      content = Files.readString(f);
-    }
+    var f = tvConfig().textFile();
+    Files.assertExists(f,"text_file");
+    String content  = Files.readString(f);
     prepareLexemes(content);
   }
-
 
   public int chooseCurrentRow() {
     return 0;
@@ -45,108 +39,72 @@ public class TextWindow extends JWindow implements FocusHandler {
 
   @Override
   public void paint() {
-    prepareToRender();
+    try {
+      prepareToRender();
 
-    var transformStringToClip = mClip.location().negate();
+      var transformStringToClip = mClip.location().negate();
 
-    // Do our calculations in string space, then translate when rendering
-    int syMin = 0;
-    int syMax = mClip.height;
-    int sxMin = 0;
-    int sxMax = mClip.width;
+      // Do our calculations in string space, then translate when rendering
+      int syMin = 0;
+      int syMax = mClip.height;
+      int sxMin = 0;
+      int sxMax = mClip.width;
 
-    todo("!more clever way of clipping, scrolling to particular start row etc");
-    todo("better to render to a grid of bytes, then render the whole screen with a few calls to lanterna");
+      todo("!more clever way of clipping, scrolling to particular start row etc");
 
-    for (var f : mFrags) {
-      if (f.mY >= syMax) break;
-      for (int j = 0; j < f.strCount; j++) {
-        int sa = j + f.strStart;
-        var ps = mPlacedStrs.get(sa);
-        plotString(ps.str, ps.x, ps.y);
-
-        if (true) continue;
-
-
-        var sy = ps.y;
-        if (sy < syMin || sy >= syMax) continue;
-        var x0 = ps.x;
-        var x1 = ps.x + ps.str.length();
-
-        var cx0 = Math.max(x0, sxMin);
-        var cx1 = Math.min(x1, sxMax);
-        if (cx0 >= cx1) continue;
-
-
-        var text = ps.str;
-        for (int k = cx0; k < cx1; k++) {
-          var strIndex = k - x0;
-          var r = Render.SHARED_INSTANCE;
-          r.drawString(cx0 + transformStringToClip.x, sy + transformStringToClip.y, text.length(), text.substring(cx0 - x0, cx1 - x0));
+      // Render the fragments into our grid
+      //
+      for (var frag : mFrags) {
+        if (frag.mY >= syMax) break;
+        for (int j = 0; j < frag.strCount; j++) {
+          int sa = j + frag.strStart;
+          var ps = mPlacedStrs.get(sa);
+          plotString(frag.colorCode, ps.str, ps.x, ps.y);
         }
       }
-    }
 
-    // Render the grid
+      // Render the grid
+      //
+      var terminal = winMgr().terminal();
 
+      // We only render string when the color has changed, or we've reached the end of a row
+      final char UNKNOWN_COLOR_CODE = Character.MAX_VALUE;
 
-    try {
-      var t = winMgr().terminal();
-      char prevColor = (char) -1;
-      var j = 0;
+      char prevColorCode = UNKNOWN_COLOR_CODE;
+      var gridIndex = 0;
       var sb = new StringBuilder();
-      for (int y = 0; y < mClip.height; y++) {
-        t.setCursorPosition( mClip.x,y);
-        for (int x = 0; x < mClip.width; x++) {
-          var col = mCharGrid[j+0];
-          var chr = mCharGrid[j+1];
-          j += 2;
 
-          if (col != prevColor) {
+      for (int y = 0; y < mClip.height; y++) {
+
+        terminal.setCursorPosition(mClip.x, y);
+
+        for (int x = 0; x < mClip.width; x++) {
+
+          var colorCode = mCharGrid[gridIndex + 0];
+          var charCode = mCharGrid[gridIndex + 1];
+          gridIndex += 2;
+
+          if (colorCode != prevColorCode) {
             if (sb.length() != 0) {
-              pr("plotting:",sb);
-              t.putString(sb.toString());
+              terminal.putString(sb.toString());
               sb.setLength(0);
             }
-            prevColor = col;
-            int fgndIndex = ((int)col) & 0xff;
-            int bgndIndex = (((int)col) >> 8) & 0xff;
+            prevColorCode = colorCode;
+            int fgndIndex = ((int) colorCode) & 0xff;
+            int bgndIndex = (((int) colorCode) >> 8) & 0xff;
+            pr("fgnd, bgnd:",fgndIndex, bgndIndex);
             ColorMgr.SHARED_INSTANCE.setColors(bgndIndex, fgndIndex);
           }
-          sb.append(chr);
+          sb.append(charCode);
         }
+
         if (sb.length() != 0) {
-          pr("finished row, plotting:",sb);
-          t.putString(sb.toString());
+          terminal.putString(sb.toString());
           sb.setLength(0);
         }
-        prevColor = (char) -1;
       }
-
     } catch (IOException e) {
       throw asRuntimeException(e);
-    }
-
-    try {
-
-      var cm = ColorMgr.SHARED_INSTANCE;
-      cm.setRandom();
-
-      var t = winMgr().terminal();
-
-      t.setCursorPosition(10, 5);
-      t.putCharacter('H');
-      t.putCharacter('e');
-      t.putCharacter('l');
-      t.putCharacter('l');
-      t.putCharacter('o');
-      t.putCharacter('!');
-      t.setCursorPosition(0, 0);
-
-      cm.setDefault();
-
-    } catch (Throwable tt) {
-      throw asRuntimeException(tt);
     }
   }
 
@@ -173,38 +131,8 @@ public class TextWindow extends JWindow implements FocusHandler {
     return true;
   }
 
-
-  public void rebuild() {
-//    mCurrentAccount = getCurrentRow();
-//
-//    clearEntries();
-//    List<Account> sorted = storage().readAllAccounts();
-//    sorted.sort(ACCOUNT_COMPARATOR);
-//
-//    for (var a : sorted) {
-//      openEntry();
-//
-//      addHint(accountNumberWithNameString(a));
-//      addHint(a.name());
-//
-//      add(new AccountNameField(a.number(), storage().accountName(a.number())));
-//      long amount;
-//      if (hasBudget(a))
-//        amount = unspentBudget(a);
-//      else
-//        amount = a.balance();
-//      add(new CurrencyField(amount));
-//      closeEntry(a);
-//    }
-//
-//    setCurrentRow(mCurrentAccount);
-    repaint();
-  }
-
-
   @Override
   public void processKeyEvent(KeyEvent k) {
-//    Account a = getCurrentRow();
 
     switch (k.toString()) {
 
@@ -217,55 +145,23 @@ public class TextWindow extends JWindow implements FocusHandler {
         break;
 
       case KeyEvent.RETURN:
-        //        if (a != null) {
-//          mListener.viewAccount(a);
-//        }
         break;
-
-//      case ":T":
-//        focusManager().pushAppend(new TransactionLedger(0, mTransListener));
-//        break;
-//
-//      case ":R":
-//        RuleManager.SHARED_INSTANCE.applyRulesToAllTransactions();
-//        break;
-//
-//      case KeyEvent.ADD:
-//        mListener.addAccount();
-//        rebuild();
-//        break;
-//
-//      case KeyEvent.DELETE_ACCOUNT:
-//        if (a != null) {
-//          mListener.deleteAccount(a);
-//          rebuild();
-//        }
-//        break;
-//
-//      case KeyEvent.EDIT:
-//        if (a != null) {
-//          mListener.editAccount(a);
-//          rebuild();
-//        }
-//        break;
-//
-//      case KeyEvent.PRINT:
-//        if (a != null) {
-//          PrintManager.SHARED_INSTANCE.printLedger(a);
-//        }
-//        break;
-//      default:
-//        super.processKeyEvent(k);
-//        break;
     }
   }
 
+  private char colorCodeForToken(int tokenId) {
+    int fgnd = tokenId;
+    int bgnd = (tokenId + mOurStandardColors.size() / 2) % mOurStandardColors.size();
+    return (char) ((fgnd << 8) | bgnd);
+  }
 
   /**
    * Determine lexeme patterns, and rebuild DFA if necessary
    */
   public File getLexemeDefinitionFile() {
-    return new File("example/example.rxp");
+    var f = tvConfig().tokenFile();
+    Files.assertExists(f,"token_file");
+    return f;
   }
 
   private DFA mDfa;
@@ -288,30 +184,43 @@ public class TextWindow extends JWindow implements FocusHandler {
     return text;
   }
 
+  private static String defColorStr = "#EF8B10 #EF1021 #EA15AC #B60EF1 #4F0DF2 #149CEB #4DAAB2 #42BD88 #A9CD32 #C48F3B #AC537C";
+
+  private List<TextColor> mOurStandardColors = arrayList();
+  private List<TextColor> mTokenIdColorCodes;
+
+  private void prepareColors() {
+
+    for (var s : split(defColorStr, ' ')) {
+      s = chompPrefix(s, "#");
+      if (s.isEmpty()) continue;
+      var col = ColorMgr.SHARED_INSTANCE.parseColor(s);
+      mOurStandardColors.add(col);
+    }
+ColorMgr.SHARED_INSTANCE.defineColors(mOurStandardColors);
+  }
 
   private void prepareLexemes(String content) {
     mPlacedStrs.clear();
-    var s = new Lexer(getTextDFA()).withNoSkip().withAcceptUnknownTokens().withText(content);
+    var dfa = getTextDFA();
+
+    prepareColors();
+
+    // determine color codes for each token id
+    mTokenIdColorCodes = arrayList();
+    for (int i = 0; i < dfa.tokenNames().length; i++) {
+      var j = mOurStandardColors.get(i % mOurStandardColors.size());
+      mTokenIdColorCodes.add(j);
+    }
+
+    var s = new Lexer(dfa).withNoSkip().withAcceptUnknownTokens().withText(content);
     mFrags.clear();
     var addr = s.filteredAddresses();
     for (var ad : addr) {
       var frag = buildTextFrag(ad);
       mFrags.add(frag);
     }
-
     layoutFrags(s.inputBytes(), s.tokenInfo());
-
-    //pr("layoutFrags produced:");
-    for (var x : mFrags) {
-      var count = x.strCount;
-      if (count == 0) continue;
-//      pr("addr:",x.mAddress);
-      int start = x.strStart;
-      for (int i = start; i < start + count; i++) {
-        var st = mPlacedStrs.get(i);
-//        pr(INDENT,st.y,st.x,quote(st.str));
-      }
-    }
   }
 
   private static TextFrag buildTextFrag(int address) {
@@ -332,7 +241,6 @@ public class TextWindow extends JWindow implements FocusHandler {
       f.mY = y;
       f.strStart = mPlacedStrs.size();
 
-
       var ad = f.mAddress;
 
       var tokenId = lexInfo[ad + Lexer.F_TOKEN_ID];
@@ -342,6 +250,9 @@ public class TextWindow extends JWindow implements FocusHandler {
       boolean visible = true;
 
       if (!visible) continue;
+
+      f.colorCode = colorCodeForToken(tokenId);
+pr("tokenId:",tokenId,"color:",f.colorCode);
 
       var strStart = lexInfo[ad + Lexer.F_TOKEN_OFFSET];
       var strLen = lexInfo[ad + Lexer.TOKEN_INFO_REC_LEN + Lexer.F_TOKEN_OFFSET] - strStart;
@@ -356,9 +267,8 @@ public class TextWindow extends JWindow implements FocusHandler {
             ps.str = sb.toString();
             ps.x = x;
             ps.y = y;
-            //var index = sPlacedStrs.size();
+            pr("...adding str:",ps.str);
             mPlacedStrs.add(ps);
-            //pstrs.add(ps);
             sb.setLength(0);
           }
           y++;
@@ -371,6 +281,7 @@ public class TextWindow extends JWindow implements FocusHandler {
       if (sb.length() != 0) {
         var ps = new PlacedStr();
         ps.str = sb.toString();
+        pr("...adding str:",ps.str);
         ps.x = x;
         ps.y = y;
         mPlacedStrs.add(ps);
@@ -381,7 +292,7 @@ public class TextWindow extends JWindow implements FocusHandler {
   }
 
 
-  private void plotString(String str, int wx, int sy) {
+  private void plotString(char colorCode, String str, int wx, int sy) {
 
     var c = mClip;
     if (sy < c.y || sy >= c.endY()) return;
@@ -398,7 +309,7 @@ public class TextWindow extends JWindow implements FocusHandler {
     var grid = mCharGrid;
 
     for (int k = cx0; k < cx1; k++) {
-      grid[gridIndex] = 0; // color?
+      grid[gridIndex] = colorCode;
       grid[gridIndex + 1] = str.charAt(k - x0);
       gridIndex += 2;
     }
