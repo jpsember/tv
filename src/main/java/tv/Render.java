@@ -6,13 +6,14 @@ import static js.base.Tools.*;
 import com.googlecode.lanterna.Symbols;
 import com.googlecode.lanterna.TerminalPosition;
 import com.googlecode.lanterna.TerminalSize;
-import com.googlecode.lanterna.TextColor;
 import com.googlecode.lanterna.graphics.TextGraphics;
 
 import js.base.BaseObject;
 import js.geometry.IPoint;
 import js.geometry.IRect;
 import js.geometry.MyMath;
+
+import static tv.Util.*;
 
 public final class Render extends BaseObject {
 
@@ -80,7 +81,7 @@ public final class Render extends BaseObject {
       var availWidth = Math.min(Math.min(s.length(), maxLength), b.endX() - startX);
       if (availWidth <= 0)
         break;
-      var tg = textGraphics();
+      var tg = mTextGraphics;
       tg.putString(startX, y, s.substring(0, availWidth));
     } while (false);
     return this;
@@ -93,7 +94,7 @@ public final class Render extends BaseObject {
       var p = clampToClip(bounds);
       if (p.width < 2 || p.height < 2)
         break;
-      var tg = textGraphics();
+      var tg = mTextGraphics;
       var x1 = p.x;
       var y1 = p.y;
       var x2 = p.endX();
@@ -114,6 +115,7 @@ public final class Render extends BaseObject {
     return this;
   }
 
+  @Deprecated
   private TextGraphics textGraphics() {
     return mTextGraphics;
   }
@@ -130,9 +132,8 @@ public final class Render extends BaseObject {
 
   private void auxPrepare(JWindow window) {
     mClipBounds = window.totalBounds();
-    var t = winMgr().abstractScreen().newTextGraphics();
-    ColorMgr.SHARED_INSTANCE.prepareRender(t);
-    mTextGraphics = t;
+    mTextGraphics = winMgr().abstractScreen().newTextGraphics();
+    ColorMgr.SHARED_INSTANCE.prepareRender( );
   }
 
   static Render unprepare() {
@@ -162,6 +163,6 @@ public final class Render extends BaseObject {
   }
 
   private IRect mClipBounds;
-  private TextGraphics mTextGraphics;
+//  private TextGraphics mTextGraphics;
   private static final Render sShared = new Render();
 }

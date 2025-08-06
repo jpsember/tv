@@ -4,6 +4,8 @@ import static js.base.Tools.*;
 
 import java.util.Random;
 
+import com.googlecode.lanterna.graphics.TextGraphics;
+import com.googlecode.lanterna.screen.Screen;
 import tv.gen.TvConfig;
 import js.base.BasePrinter;
 import js.base.DateTimeTools;
@@ -121,6 +123,20 @@ public final class Util {
     if (sMessageExpTime != 0 && System.currentTimeMillis() >= sMessageExpTime) {
       setFooterMessage();
     }
+  }
+
+
+  public static Screen mScreen;
+  public static TextGraphics mTextGraphics;
+
+  @Deprecated
+  public static Screen screen() {
+    return mScreen;
+  }
+
+  @Deprecated
+  public static TextGraphics textGraphics() {
+    return mTextGraphics;
   }
 
 }

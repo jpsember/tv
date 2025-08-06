@@ -11,11 +11,8 @@ import com.googlecode.lanterna.TerminalPosition;
 import com.googlecode.lanterna.TerminalSize;
 import com.googlecode.lanterna.graphics.TextGraphics;
 import com.googlecode.lanterna.input.KeyStroke;
-import com.googlecode.lanterna.screen.AbstractScreen;
 import com.googlecode.lanterna.screen.Screen;
-import com.googlecode.lanterna.screen.TerminalScreen;
 import com.googlecode.lanterna.terminal.DefaultTerminalFactory;
-import com.googlecode.lanterna.terminal.Terminal;
 
 import js.base.BaseObject;
 import js.file.Files;
@@ -369,14 +366,6 @@ public class WinMgr extends BaseObject {
     return mScreen != null;
   }
 
-  public Screen screen() {
-    return mScreen;
-  }
-
-  public TextGraphics textGraphics() {
-    return mTextGraphics;
-  }
-
   public boolean inView(JWindow window) {
     checkNotNull(window);
     var tc = topLevelContainer();
@@ -499,8 +488,6 @@ public class WinMgr extends BaseObject {
   private WinMgr() {
   }
 
-  private Screen mScreen;
-  private TextGraphics mTextGraphics;
   static {
     SHARED_INSTANCE = new WinMgr();
   }

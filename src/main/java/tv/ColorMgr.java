@@ -32,18 +32,18 @@ public final class ColorMgr {
   }
 
   private void setBgndColor(TextColor t) {
-    var tg = WinMgr.SHARED_INSTANCE.textGraphics();
+    var tg = mTextGraphics;
     tg.setBackgroundColor(t);
 
   }
 
   private void setFgndColor(TextColor t) {
-    var tg = WinMgr.SHARED_INSTANCE.textGraphics();
-    tg.setForegroundColor(t);
+    mTextGraphics.setForegroundColor(t);
   }
 
-  public void prepareRender(TextGraphics t) {
+  public void prepareRender( ) {
     if (mNormBgnd != null) return;
+    var t = mTextGraphics;
     mNormBgnd = t.getBackgroundColor();
     mNormFgnd = t.getForegroundColor();
   }
@@ -76,13 +76,13 @@ public final class ColorMgr {
   private TextColor mNormBgnd, mNormFgnd;
 
   public void setDefaultColors() {
-    var t = WinMgr.SHARED_INSTANCE.textGraphics();
+    var t =  mTextGraphics;
     t.setBackgroundColor(mNormBgnd);
     t.setForegroundColor(mNormFgnd);
   }
 
   public void setColors(int bgndIndex, int fgndIndex) {
-    var t = WinMgr.SHARED_INSTANCE.textGraphics();
+    var t = mTextGraphics;
     t.setBackgroundColor(mColors.get(bgndIndex));
     t.setForegroundColor(mColors.get(fgndIndex));
   }

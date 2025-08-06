@@ -109,7 +109,7 @@ public class TextWindow extends JWindow implements FocusHandler {
       int bgndIndex = (((int) c0) >> 8) & 0xff;
       cm.setColors(bgndIndex, fgndIndex);
     }
-    var tg = WinMgr.SHARED_INSTANCE.textGraphics();
+    var tg =  mTextGraphics;
     tg.putString(cx, cy, str);
   }
 
