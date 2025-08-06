@@ -94,7 +94,7 @@ public final class Util {
     return sConfig;
   }
 
-//  public static MessageWindow sHeader, sFooter;
+  public static MessageWindow sHeader, sFooter;
 
 
   private static long sPendingDuration;
@@ -110,10 +110,9 @@ public final class Util {
     if (sPendingDuration > 0)
       sMessageExpTime = System.currentTimeMillis() + sPendingDuration;
     sPendingDuration = 0;
-//    if (sFooter != null) {
-//      sFooter.setMessageAt(MessageWindow.LEFT, s);
-//    } else
-    {
+    if (sFooter != null) {
+      sFooter.setMessageAt(MessageWindow.LEFT, s);
+    } else {
       pr(s);
     }
   }

@@ -79,8 +79,16 @@ public class JWindow extends BaseObject {
     return hasFlag(FLG_PAINTVALID);
   }
 
+  boolean partialPaintValid() {
+    return hasFlag(FLG_PARTIALPAINTVALID);
+  }
+
   void setPaintValid(boolean valid) {
     setFlag(FLG_PAINTVALID, valid);
+  }
+
+  void setPartialPaintValid(boolean valid) {
+    setFlag(FLG_PARTIALPAINTVALID, valid);
   }
 
   boolean layoutValid() {
@@ -126,6 +134,10 @@ public class JWindow extends BaseObject {
     setPaintValid(false);
   }
 
+  public void repaintPartial() {
+    setPartialPaintValid(false);
+  }
+
   public void setSizeChars(int chars) {
     checkArgument(chars >= 1, "illegal number of chars");
     mSizeExpr = chars;
@@ -142,18 +154,19 @@ public class JWindow extends BaseObject {
   /**
    * Render the window onto the screen
    */
-  void render() {
-    var r = Render.prepare(this);
+  void render(boolean partial) {
+    var r = Render.prepare(this, partial);
 
     var totalBounds = totalBounds();
     checkNotNull(totalBounds, "JWindow has no totalBounds!", INDENT, this);
-    r.clearRect(totalBounds);
+    if (!partial)
+      r.clearRect(totalBounds);
     int btype = mFlags & FLG_BORDER;
     if (btype != BORDER_NONE) {
-      r.drawRect(totalBounds, btype);
+      if (!partial)
+        r.drawRect(totalBounds, btype);
       r.setClipBounds(calcContentBounds());
     }
-    pr("JWindow.", this.name(), "render, clipBounds:", r.clipBounds());
     paint();
     Render.unprepare();
   }
@@ -192,6 +205,7 @@ public class JWindow extends BaseObject {
   private static final int FLG_BORDER = 0x3;
   private static final int FLG_PAINTVALID = 1 << 2;
   private static final int FLG_LAYOUTVALID = 1 << 3;
+  private static final int FLG_PARTIALPAINTVALID = 1 << 4;
   private IRect mWindowBounds;
   private JWindow mParent;
   private List<JWindow> mChildren = arrayList();

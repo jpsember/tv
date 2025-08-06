@@ -45,8 +45,6 @@ public class TvOper extends AppOper {
 
     logger(new Logger(config().logFile()));
 
-    pr(VERT_SP, "STARTING PERFORM");
-
     setUtilConfig(config());
 
     var mgr = winMgr();
@@ -58,23 +56,23 @@ public class TvOper extends AppOper {
       // Construct root container
       mgr.pushContainer();
 
-//      // Add a small header
-//      {
-//        var h = new MessageWindow();
-//        Util.sHeader = h;
-//        h.setMessageAt(MessageWindow.CENTER, "tv 1.0").setMessageAt(MessageWindow.RIGHT, "more to come");
-//        mgr.chars(1).window(h);
-//      }
+      // Add a small header
+      {
+        var h = new MessageWindow();
+        Util.sHeader = h;
+        h.setMessageAt(MessageWindow.CENTER, "tv 1.0").setMessageAt(MessageWindow.RIGHT, "more to come");
+        mgr.chars(1).window(h);
+      }
 
       {
         // Create a container for the text file
-//        var c = mgr.horz().pushContainer();
+        var c = mgr.horz().pushContainer();
 
         {
           mgr.pct(30);
           mgr.thickBorder();
           mgr.window(mTextWindow);
-//          focusManager().setTopLevelContainer(c);
+          focusManager().setTopLevelContainer(c);
         }
 //        {
 //          mgr.pct(70);
@@ -84,15 +82,15 @@ public class TvOper extends AppOper {
 //          mgr.popContainer();
 //        }
 
-//        mgr.popContainer();
+        mgr.popContainer();
       }
 
-//      // Add a small footer
-//      {
-//        var h = new MessageWindow();
-//        Util.sFooter = h;
-//        mgr.chars(1).window(h);
-//      }
+      // Add a small footer
+      {
+        var h = new MessageWindow();
+        Util.sFooter = h;
+        mgr.chars(1).window(h);
+      }
 
       mgr.popContainer();
       mgr.doneConstruction();

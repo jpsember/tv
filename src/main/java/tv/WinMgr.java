@@ -170,34 +170,25 @@ public class WinMgr extends BaseObject {
   }
 
   public void mainLoop() {
-    boolean omitMsg = true;
     int k = 0;
     setFooterMessage("Hello there!");
     while (isOpen()) {
       update();
       sleepMs(30);
-      if (omitMsg)
-        sleepMs(170);
-      if (!omitMsg) updateFooterMessage();
+      updateFooterMessage();
       if (quitRequested())
         close();
-      if (!omitMsg) {
-        if (++k % 60 == 0) {
-          setFooterMessage("k =", k);
-        }
+      if (++k % 60 == 0) {
+        setFooterMessage("k =", k);
       }
     }
   }
 
-  private char showChar = 'A';
-  private char prevShowChar = ' ';
-
   public void update() {
     var m = winMgr();
-
     try {
 
-     // focusManager().update();
+      focusManager().update();
 
       KeyStroke keyStroke = mScreen.pollInput();
       if (keyStroke != null) {
@@ -205,118 +196,65 @@ public class WinMgr extends BaseObject {
 
         boolean processed = false;
 
+        pr("key:",key);
         switch (key.toString()) {
           case KeyEvent.QUIT:
             quit();
             return;
           case KeyEvent.ESCAPE:
-            quit();
-//            if (focusManager().popIfPossible()) {
-//              processed = true;
-//            } else {
-//              alert("quitting on escape");
-//              quit();
-//            }
+            if (focusManager().popIfPossible()) {
+              processed = true;
+            } else {
+              alert("quitting on escape");
+              quit();
+            }
             break;
           default:
-            showChar++;
-            if (showChar > 'Z')
-              showChar = 'A';
 //          if (focusManager().processUndoKeys(key))
 //            processed = true;
             break;
         }
 
-//        if (!processed) {
-//          var f = focusManager().focus();
-//          if (f == null) {
-//            pr("There is no focus!");
-//          } else {
-//            f.processKeyEvent(key);
-//          }
-//        }
+        if (!processed) {
+          var f = focusManager().focus();
+          if (f == null) {
+            pr("There is no focus!");
+          } else {
+            f.processKeyEvent(key);
+          }
+        }
       }
 
       var c = m.topLevelContainer();
-      discardTextGraphics();
 
       // Update size of terminal
       mScreen.doResizeIfNecessary();
       var currSize = toIpoint(mScreen.getTerminalSize());
-      pr(VERT_SP,DASHES,"terminal curr size:",currSize);
 
       // If the screen size has changed, or the desired layout bounds for the current top-level container
       // has changed, invalidate the layout
 
       {
         if (!currSize.equals(mPrevLayoutScreenSize)) {
-          pr("...new screen size:", currSize);
           mPrevLayoutScreenSize = currSize;
           invalidateRect(new IRect(currSize));
-          mRedrawFlag  = true;
         }
 
-//        var desiredBounds = c.preferredBounds(currSize);
-//        if (!desiredBounds.equals(c.totalBounds())) {
-//          c.setTotalBounds(desiredBounds);
-//          c.setLayoutInvalid();
-//        }
-      }
-      if (mRedrawFlag) {
-mTextGraphics = null;
-
+        var desiredBounds = c.preferredBounds(currSize);
+        if (!desiredBounds.equals(c.totalBounds())) {
+          c.setTotalBounds(desiredBounds);
+          c.setLayoutInvalid();
+        }
       }
 
-      if (mTextGraphics == null) {
-        mTextGraphics = mScreen.newTextGraphics();
-        mTextGraphics.fill('a');
-        prevShowChar = ' '; }
+      redrawAllTreesIntersectingInvalidRect();
 
-     if (showChar != prevShowChar) {
-       prevShowChar = showChar;
-
-       // We need a terminal
-       var terminal = WinMgr.SHARED_INSTANCE.terminal();
-       terminal.setCursorPosition(5,5);
-         terminal.putString("Hello: "+Character.toString((char)showChar));
-     }
+      // Make changes visible
       mScreen.refresh();
-
-//      redrawAllTreesIntersectingInvalidRect();
-//
-//      // Make changes visible
-//      if (mTextGraphics != null) {
-//        pr("refreshing screen");
-//        mScreen.refresh();
-//        discardTextGraphics();
-//      }
     } catch (Throwable t) {
       m.closeIfError(t);
       throw asRuntimeException(t);
     }
-  }
-
-  private boolean mRedrawFlag;
-
-  private void prepareTextRecord() {
-    if (mTextGraphics == null) {
-      var t = abstractScreen().newTextGraphics();
-      ColorMgr.SHARED_INSTANCE.prepareRender(t);
-      mTextGraphics = t;
-      pr("...prepared textRecord:", t, "size:", t.getSize());
-    }
-  }
-
-  private void discardTextGraphics() {
-    if (mTextGraphics != null) {
-      pr("...discarding text graphics");
-      mTextGraphics = null;
-    }
-  }
-
-  public TextGraphics textGraphics() {
-    checkState(mTextGraphics != null);
-    return mTextGraphics;
   }
 
   private IPoint mPrevLayoutScreenSize;
@@ -335,14 +273,6 @@ mTextGraphics = null;
     return IPoint.with(s.getColumns(), s.getRows());
   }
 
-  public static final boolean ISSUE_VIEW = true && alert("ISSUE_VIEW is in effect");
-
-  public static void pVIEW(Object... messages) {
-    if (ISSUE_VIEW)
-      pr(insertStringToFront("ISSUE_VIEW --->", messages));
-  }
-
-
   /**
    * If a view's layout is invalid, calls its layout() method, and invalidates
    * its paint.
@@ -352,14 +282,16 @@ mTextGraphics = null;
    * Recursively processes all child views in this manner as well.
    */
   private void updateView(JWindow w) {
+    final boolean db = false;// && mark("logging is on");
 
-    if (ISSUE_VIEW) {
+    if (db) {
       if (!w.layoutValid() || !w.paintValid())
-        pVIEW(VERT_SP, "updateView", w.name());
+        pr(VERT_SP, "updateViews");
     }
 
     if (!w.layoutValid()) {
-      pVIEW("...window", w.name(), "layout is invalid");
+      if (db)
+        pr("...window", w.name(), "layout is invalid");
       w.repaint();
       w.layout();
       w.setLayoutValid();
@@ -370,19 +302,24 @@ mTextGraphics = null;
     }
 
     if (!w.paintValid()) {
-      pr("updateView, window paint not valid:", w.name());
-      prepareTextRecord();
-      pVIEW("...window", w.name(), "paint is invalid; rendering; bounds:", w.totalBounds());
+      // We are repainting everything, so make the partial valid as well
+      w.setPartialPaintValid(true);
+      if (db)
+        pr("...window", w.name(), "paint is invalid; rendering; bounds:", w.totalBounds());
       // Mark all children invalid
       for (var c : w.children())
         c.setPaintValid(false);
-      w.render();
+      w.render(false);
       w.setPaintValid(true);
+    } else if (!w.partialPaintValid()) {
+      if (db)
+        pr("...window", w.name(), "partial paint is invalid");
+      w.render(true);
+      w.setPartialPaintValid(true);
     }
 
-    for (var c : w.children()) {
+    for (var c : w.children())
       updateView(c);
-    }
   }
 
   /**
@@ -392,11 +329,11 @@ mTextGraphics = null;
    */
   public Throwable closeIfError(Throwable t) {
     if (t != null) {
-      try {
-        close();
-      } catch (Throwable t2) {
-        pr("(...ignoring exception:", t2.getMessage(), ")");
-      }
+     try {
+       close();
+     } catch (Throwable t2) {
+       pr("(...ignoring exception:",t2.getMessage(),")");
+     }
     }
     return t;
   }
@@ -415,7 +352,6 @@ mTextGraphics = null;
       var f = new DefaultTerminalFactory();
       // f.setUnixTerminalCtrlCBehaviour(CtrlCBehaviour.TRAP);
       mTerminal = f.createTerminal();
-      pr(VERT_SP,"created terminal");
       mScreen = new TerminalScreen(mTerminal);
       mScreen.startScreen();
       winMgr().hideCursor();
@@ -445,6 +381,8 @@ mTextGraphics = null;
     return mScreen;
   }
 
+  private Terminal mTerminal;
+  private AbstractScreen mScreen;
 
   public boolean inView(JWindow window) {
     checkNotNull(window);
@@ -540,7 +478,6 @@ mTextGraphics = null;
   }
 
   private void redrawAllTreesIntersectingInvalidRect() {
-    pr(VERT_SP,"redraw isect invalid, rect:",INDENT,mInvalidRect);
     List<WindowTree> cs = arrayList();
     cs.addAll(mTreeStack);
     cs.add(mCurrentTree);
@@ -549,22 +486,12 @@ mTextGraphics = null;
       if (c.layoutValid() && c.paintValid()) {
         var b = c.totalBounds();
         if (mInvalidRect != null && b.intersects(mInvalidRect)) {
-          pr("invalid rect intersects:", c.name());
-          prepareTextRecord();
           c.repaint();
         }
       }
       updateView(c);
     }
     mInvalidRect = null;
-
-    // If terminal was modified, flush it
-    try {
-      pr("flushing terminal");
-      terminal().flush();
-    } catch (IOException e) {
-      throw asRuntimeException(e);
-    }
   }
 
   public void openTreeWithFocus(int width, int height, JWindow window) {
@@ -579,11 +506,6 @@ mTextGraphics = null;
   }
 
   //------------------------------------------------------------------
-
-
-  private Terminal mTerminal;
-  private AbstractScreen mScreen;
-  private TextGraphics mTextGraphics;
 
   private WinMgr() {
   }

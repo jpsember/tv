@@ -23,8 +23,8 @@ public class TextWindow extends JWindow implements FocusHandler {
 
     // Load the sample text file
     var f = tvConfig().textFile();
-    Files.assertExists(f, "text_file");
-    String content = Files.readString(f);
+    Files.assertExists(f,"text_file");
+    String content  = Files.readString(f);
     prepareLexemes(content);
   }
 
@@ -40,8 +40,6 @@ public class TextWindow extends JWindow implements FocusHandler {
 
   @Override
   public void paint() {
-    todo("trigger repaint when user changes window bounds");
-
     try {
       prepareToRender();
 
@@ -96,25 +94,27 @@ public class TextWindow extends JWindow implements FocusHandler {
         if (sb.length() != 0) {
           terminal.putString(sb.toString());
           sb.setLength(0);
-          scount++;
         }
       }
-      pr("...rendered count:", scount);
-      todo("why do border chars show up but not strings?");
     } catch (IOException e) {
       throw asRuntimeException(e);
     }
   }
 
   private void prepareToRender() {
+    if (mPrepared)
+      return;
     var r = Render.SHARED_INSTANCE;
     mClip = r.clipBounds();
-    mGridSize = r.clipBounds().size();
+    mGridSize = mClip.size();
     mCharGrid = new char[mGridSize.product() * 2];
+    mPrepared = true;
   }
 
+  private boolean mPrepared;
   private IRect mClip;
   private IPoint mGridSize;
+
 
   @Override
   public boolean focusPossible() {
@@ -155,7 +155,7 @@ public class TextWindow extends JWindow implements FocusHandler {
    */
   public File getLexemeDefinitionFile() {
     var f = tvConfig().tokenFile();
-    Files.assertExists(f, "token_file");
+    Files.assertExists(f,"token_file");
     return f;
   }
 
@@ -192,7 +192,7 @@ public class TextWindow extends JWindow implements FocusHandler {
       var col = ColorMgr.SHARED_INSTANCE.parseColor(s);
       mOurStandardColors.add(col);
     }
-    ColorMgr.SHARED_INSTANCE.defineColors(mOurStandardColors);
+ColorMgr.SHARED_INSTANCE.defineColors(mOurStandardColors);
   }
 
   private void prepareLexemes(String content) {
@@ -247,7 +247,7 @@ public class TextWindow extends JWindow implements FocusHandler {
       if (!visible) continue;
 
       f.colorCode = colorCodeForToken(tokenId);
-      pr("tokenId:", tokenId, "color:", f.colorCode);
+pr("tokenId:",tokenId,"color:",f.colorCode);
 
       var strStart = lexInfo[ad + Lexer.F_TOKEN_OFFSET];
       var strLen = lexInfo[ad + Lexer.TOKEN_INFO_REC_LEN + Lexer.F_TOKEN_OFFSET] - strStart;
@@ -262,7 +262,7 @@ public class TextWindow extends JWindow implements FocusHandler {
             ps.str = sb.toString();
             ps.x = x;
             ps.y = y;
-            pr("...adding str:", ps.str);
+            pr("...adding str:",ps.str);
             mPlacedStrs.add(ps);
             sb.setLength(0);
           }
@@ -276,7 +276,7 @@ public class TextWindow extends JWindow implements FocusHandler {
       if (sb.length() != 0) {
         var ps = new PlacedStr();
         ps.str = sb.toString();
-        pr("...adding str:", ps.str);
+        pr("...adding str:",ps.str);
         ps.x = x;
         ps.y = y;
         mPlacedStrs.add(ps);

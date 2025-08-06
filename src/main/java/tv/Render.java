@@ -6,6 +6,7 @@ import static js.base.Tools.*;
 import com.googlecode.lanterna.Symbols;
 import com.googlecode.lanterna.TerminalPosition;
 import com.googlecode.lanterna.TerminalSize;
+import com.googlecode.lanterna.TextColor;
 import com.googlecode.lanterna.graphics.TextGraphics;
 
 import js.base.BaseObject;
@@ -40,15 +41,10 @@ public final class Render extends BaseObject {
   public Render clearRect(IRect bounds, char character) {
     var p = clampToClip(bounds);
     if (!p.isDegenerate()) {
-       textGraphics()
-       .fillRectangle(new TerminalPosition(p.x, p.y), new TerminalSize(p.width, p.height),
+      mTextGraphics.fillRectangle(new TerminalPosition(p.x, p.y), new TerminalSize(p.width, p.height),
           character);
     }
     return this;
-  }
-
-  private TextGraphics textGraphics() {
-    return WinMgr.SHARED_INSTANCE.textGraphics();
   }
 
   public Render clearRect(IRect bounds) {
@@ -84,8 +80,8 @@ public final class Render extends BaseObject {
       var availWidth = Math.min(Math.min(s.length(), maxLength), b.endX() - startX);
       if (availWidth <= 0)
         break;
-      textGraphics()
-          .putString(startX, y, s.substring(0, availWidth));
+      var tg = textGraphics();
+      tg.putString(startX, y, s.substring(0, availWidth));
     } while (false);
     return this;
   }
@@ -118,18 +114,27 @@ public final class Render extends BaseObject {
     return this;
   }
 
+  private TextGraphics textGraphics() {
+    return mTextGraphics;
+  }
+
   /**
    * Prepare for subsequent operations to occur with a particular window
    */
-  static Render prepare(JWindow window ) {
+  static Render prepare(JWindow window, boolean partial) {
     var r = sShared;
     SHARED_INSTANCE = r;
-    r.auxPrepare(window );
+    r.auxPrepare(window, partial);
     return r;
   }
 
-  private void auxPrepare(JWindow window ) {
+  private void auxPrepare(JWindow window, boolean partial) {
+    mWindow = window;
     mClipBounds = window.totalBounds();
+    var t = winMgr().abstractScreen().newTextGraphics();
+    ColorMgr.SHARED_INSTANCE.prepareRender(t);
+    mTextGraphics = t;
+    mPartial = partial;
   }
 
   static Render unprepare() {
@@ -138,7 +143,9 @@ public final class Render extends BaseObject {
   }
 
   private void auxUnprepare() {
+    mWindow = null;
     mClipBounds = null;
+    mTextGraphics = null;
     SHARED_INSTANCE = null;
   }
 
@@ -157,6 +164,13 @@ public final class Render extends BaseObject {
     return IRect.rectContainingPoints(p1, p2);
   }
 
+  public boolean partial() {
+    return mPartial;
+  }
+
   private IRect mClipBounds;
+  private JWindow mWindow;
+  private TextGraphics mTextGraphics;
+  private boolean mPartial;
   private static final Render sShared = new Render();
 }
