@@ -9,7 +9,6 @@ import java.util.Stack;
 
 import com.googlecode.lanterna.TerminalPosition;
 import com.googlecode.lanterna.TerminalSize;
-import com.googlecode.lanterna.graphics.TextGraphics;
 import com.googlecode.lanterna.input.KeyStroke;
 import com.googlecode.lanterna.screen.AbstractScreen;
 import com.googlecode.lanterna.screen.TerminalScreen;
@@ -173,14 +172,14 @@ public class WinMgr extends BaseObject {
     int k = 0;
     setFooterMessage("Hello there!");
     while (isOpen()) {
-      update();
-      sleepMs(30);
-      updateFooterMessage();
-      if (quitRequested())
-        close();
       if (++k % 60 == 0) {
         setFooterMessage("k =", k);
       }
+      updateFooterMessage();
+      update();
+      if (quitRequested())
+        close();
+      sleepMs(30);
     }
   }
 
@@ -250,6 +249,7 @@ public class WinMgr extends BaseObject {
       redrawAllTreesIntersectingInvalidRect();
 
       // Make changes visible
+      pr("MSCREEN.REFRESH");
       mScreen.refresh();
     } catch (Throwable t) {
       m.closeIfError(t);
@@ -374,9 +374,6 @@ public class WinMgr extends BaseObject {
     return mScreen;
   }
 
-  private Terminal mTerminal;
-  private AbstractScreen mScreen;
-
   public boolean inView(JWindow window) {
     checkNotNull(window);
     var tc = topLevelContainer();
@@ -402,7 +399,7 @@ public class WinMgr extends BaseObject {
   private IRect mInvalidRect;
 
   public Terminal terminal() {
-    return this.mTerminal;
+    return mTerminal;
   }
 
   // ------------------------------------------------------------------
@@ -502,6 +499,9 @@ public class WinMgr extends BaseObject {
 
   private WinMgr() {
   }
+
+  private Terminal mTerminal;
+  private AbstractScreen mScreen;
 
   static {
     SHARED_INSTANCE = new WinMgr();

@@ -37,7 +37,6 @@ public class TextWindow extends JWindow implements FocusHandler {
     return "TextWindow";
   }
 
-
   @Override
   public void paint() {
     try {
@@ -66,7 +65,6 @@ public class TextWindow extends JWindow implements FocusHandler {
       var gridIndex = 0;
       var sb = new StringBuilder();
 
-      int scount = 0;
       for (int y = 0; y < mGridSize.y; y++) {
 
         terminal.setCursorPosition(mClip.x, mClip.y + y);
@@ -81,7 +79,6 @@ public class TextWindow extends JWindow implements FocusHandler {
             if (sb.length() != 0) {
               terminal.putString(sb.toString());
               sb.setLength(0);
-              scount++;
             }
             prevColorCode = colorCode;
             int fgndIndex = ((int) colorCode) & 0xff;
@@ -96,6 +93,8 @@ public class TextWindow extends JWindow implements FocusHandler {
           sb.setLength(0);
         }
       }
+
+      pr("GRID PLOTTED");
     } catch (IOException e) {
       throw asRuntimeException(e);
     }
@@ -104,6 +103,7 @@ public class TextWindow extends JWindow implements FocusHandler {
   private void prepareToRender() {
     if (mPrepared)
       return;
+    todo("!do we need to rebuild the mCharGrid each time?");
     var r = Render.SHARED_INSTANCE;
     mClip = r.clipBounds();
     mGridSize = mClip.size();

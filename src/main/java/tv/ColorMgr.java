@@ -48,6 +48,7 @@ public final class ColorMgr {
   }
 
   public void prepareRender(TextGraphics t) {
+    // For optimization, we have our own reference to the WinMgr's Terminal instance
     mTerminal = WinMgr.SHARED_INSTANCE.terminal();
     if (mNormBgnd != null) return;
     mNormBgnd = t.getBackgroundColor();
