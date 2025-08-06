@@ -79,7 +79,6 @@ public class JWindow extends BaseObject {
     return hasFlag(FLG_PAINTVALID);
   }
 
-
   void setPaintValid(boolean valid) {
     setFlag(FLG_PAINTVALID, valid);
   }

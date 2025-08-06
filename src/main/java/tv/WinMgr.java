@@ -3,6 +3,7 @@ package tv;
 import static tv.Util.*;
 import static js.base.Tools.*;
 
+import java.io.IOException;
 import java.util.List;
 import java.util.Stack;
 
@@ -188,12 +189,15 @@ public class WinMgr extends BaseObject {
     }
   }
 
+  private char showChar = 'A';
+  private char prevShowChar = ' ';
+
   public void update() {
     var m = winMgr();
 
     try {
 
-      focusManager().update();
+     // focusManager().update();
 
       KeyStroke keyStroke = mScreen.pollInput();
       if (keyStroke != null) {
@@ -201,33 +205,36 @@ public class WinMgr extends BaseObject {
 
         boolean processed = false;
 
-        pr("key:", key);
         switch (key.toString()) {
           case KeyEvent.QUIT:
             quit();
             return;
           case KeyEvent.ESCAPE:
-            if (focusManager().popIfPossible()) {
-              processed = true;
-            } else {
-              alert("quitting on escape");
-              quit();
-            }
+            quit();
+//            if (focusManager().popIfPossible()) {
+//              processed = true;
+//            } else {
+//              alert("quitting on escape");
+//              quit();
+//            }
             break;
           default:
+            showChar++;
+            if (showChar > 'Z')
+              showChar = 'A';
 //          if (focusManager().processUndoKeys(key))
 //            processed = true;
             break;
         }
 
-        if (!processed) {
-          var f = focusManager().focus();
-          if (f == null) {
-            pr("There is no focus!");
-          } else {
-            f.processKeyEvent(key);
-          }
-        }
+//        if (!processed) {
+//          var f = focusManager().focus();
+//          if (f == null) {
+//            pr("There is no focus!");
+//          } else {
+//            f.processKeyEvent(key);
+//          }
+//        }
       }
 
       var c = m.topLevelContainer();
@@ -236,6 +243,7 @@ public class WinMgr extends BaseObject {
       // Update size of terminal
       mScreen.doResizeIfNecessary();
       var currSize = toIpoint(mScreen.getTerminalSize());
+      pr(VERT_SP,DASHES,"terminal curr size:",currSize);
 
       // If the screen size has changed, or the desired layout bounds for the current top-level container
       // has changed, invalidate the layout
@@ -245,28 +253,50 @@ public class WinMgr extends BaseObject {
           pr("...new screen size:", currSize);
           mPrevLayoutScreenSize = currSize;
           invalidateRect(new IRect(currSize));
+          mRedrawFlag  = true;
         }
 
-        var desiredBounds = c.preferredBounds(currSize);
-        if (!desiredBounds.equals(c.totalBounds())) {
-          c.setTotalBounds(desiredBounds);
-          c.setLayoutInvalid();
-        }
+//        var desiredBounds = c.preferredBounds(currSize);
+//        if (!desiredBounds.equals(c.totalBounds())) {
+//          c.setTotalBounds(desiredBounds);
+//          c.setLayoutInvalid();
+//        }
+      }
+      if (mRedrawFlag) {
+mTextGraphics = null;
+
       }
 
-      redrawAllTreesIntersectingInvalidRect();
+      if (mTextGraphics == null) {
+        mTextGraphics = mScreen.newTextGraphics();
+        mTextGraphics.fill('a');
+        prevShowChar = ' '; }
 
-      // Make changes visible
-      if (mTextGraphics != null) {
-        pr("refreshing screen");
-        mScreen.refresh();
-        discardTextGraphics();
-      }
+     if (showChar != prevShowChar) {
+       prevShowChar = showChar;
+
+       // We need a terminal
+       var terminal = WinMgr.SHARED_INSTANCE.terminal();
+       terminal.setCursorPosition(5,5);
+         terminal.putString("Hello: "+Character.toString((char)showChar));
+     }
+      mScreen.refresh();
+
+//      redrawAllTreesIntersectingInvalidRect();
+//
+//      // Make changes visible
+//      if (mTextGraphics != null) {
+//        pr("refreshing screen");
+//        mScreen.refresh();
+//        discardTextGraphics();
+//      }
     } catch (Throwable t) {
       m.closeIfError(t);
       throw asRuntimeException(t);
     }
   }
+
+  private boolean mRedrawFlag;
 
   private void prepareTextRecord() {
     if (mTextGraphics == null) {
@@ -385,6 +415,7 @@ public class WinMgr extends BaseObject {
       var f = new DefaultTerminalFactory();
       // f.setUnixTerminalCtrlCBehaviour(CtrlCBehaviour.TRAP);
       mTerminal = f.createTerminal();
+      pr(VERT_SP,"created terminal");
       mScreen = new TerminalScreen(mTerminal);
       mScreen.startScreen();
       winMgr().hideCursor();
@@ -509,6 +540,7 @@ public class WinMgr extends BaseObject {
   }
 
   private void redrawAllTreesIntersectingInvalidRect() {
+    pr(VERT_SP,"redraw isect invalid, rect:",INDENT,mInvalidRect);
     List<WindowTree> cs = arrayList();
     cs.addAll(mTreeStack);
     cs.add(mCurrentTree);
@@ -525,6 +557,14 @@ public class WinMgr extends BaseObject {
       updateView(c);
     }
     mInvalidRect = null;
+
+    // If terminal was modified, flush it
+    try {
+      pr("flushing terminal");
+      terminal().flush();
+    } catch (IOException e) {
+      throw asRuntimeException(e);
+    }
   }
 
   public void openTreeWithFocus(int width, int height, JWindow window) {
