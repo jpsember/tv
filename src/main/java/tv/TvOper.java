@@ -45,6 +45,8 @@ public class TvOper extends AppOper {
 
     logger(new Logger(config().logFile()));
 
+    pr(VERT_SP,"STARTING PERFORM");
+
     setUtilConfig(config());
 
     var mgr = winMgr();

@@ -8,7 +8,7 @@ import java.util.Stack;
 
 import com.googlecode.lanterna.TerminalPosition;
 import com.googlecode.lanterna.TerminalSize;
-import com.googlecode.lanterna.TextColor;
+import com.googlecode.lanterna.graphics.TextGraphics;
 import com.googlecode.lanterna.input.KeyStroke;
 import com.googlecode.lanterna.screen.AbstractScreen;
 import com.googlecode.lanterna.screen.TerminalScreen;
@@ -169,22 +169,28 @@ public class WinMgr extends BaseObject {
   }
 
   public void mainLoop() {
+    boolean omitMsg = true;
     int k = 0;
     setFooterMessage("Hello there!");
     while (isOpen()) {
       update();
       sleepMs(30);
-      updateFooterMessage();
+      if (omitMsg)
+        sleepMs(170);
+      if (!omitMsg) updateFooterMessage();
       if (quitRequested())
         close();
-      if (++k % 60 == 0) {
-        setFooterMessage("k =", k);
+      if (!omitMsg) {
+        if (++k % 60 == 0) {
+          setFooterMessage("k =", k);
+        }
       }
     }
   }
 
   public void update() {
     var m = winMgr();
+
     try {
 
       focusManager().update();
@@ -195,7 +201,7 @@ public class WinMgr extends BaseObject {
 
         boolean processed = false;
 
-        pr("key:",key);
+        pr("key:", key);
         switch (key.toString()) {
           case KeyEvent.QUIT:
             quit();
@@ -225,6 +231,7 @@ public class WinMgr extends BaseObject {
       }
 
       var c = m.topLevelContainer();
+      discardTextGraphics();
 
       // Update size of terminal
       mScreen.doResizeIfNecessary();
@@ -235,6 +242,7 @@ public class WinMgr extends BaseObject {
 
       {
         if (!currSize.equals(mPrevLayoutScreenSize)) {
+          pr("...new screen size:", currSize);
           mPrevLayoutScreenSize = currSize;
           invalidateRect(new IRect(currSize));
         }
@@ -249,11 +257,36 @@ public class WinMgr extends BaseObject {
       redrawAllTreesIntersectingInvalidRect();
 
       // Make changes visible
-      mScreen.refresh();
+      if (mTextGraphics != null) {
+        pr("refreshing screen");
+        mScreen.refresh();
+        discardTextGraphics();
+      }
     } catch (Throwable t) {
       m.closeIfError(t);
       throw asRuntimeException(t);
     }
+  }
+
+  private void prepareTextRecord() {
+    if (mTextGraphics == null) {
+      var t = abstractScreen().newTextGraphics();
+      ColorMgr.SHARED_INSTANCE.prepareRender(t);
+      mTextGraphics = t;
+      pr("...prepared textRecord:", t, "size:", t.getSize());
+    }
+  }
+
+  private void discardTextGraphics() {
+    if (mTextGraphics != null) {
+      pr("...discarding text graphics");
+      mTextGraphics = null;
+    }
+  }
+
+  public TextGraphics textGraphics() {
+    checkState(mTextGraphics != null);
+    return mTextGraphics;
   }
 
   private IPoint mPrevLayoutScreenSize;
@@ -272,6 +305,14 @@ public class WinMgr extends BaseObject {
     return IPoint.with(s.getColumns(), s.getRows());
   }
 
+  public static final boolean ISSUE_VIEW = true && alert("ISSUE_VIEW is in effect");
+
+  public static void pVIEW(Object... messages) {
+    if (ISSUE_VIEW)
+      pr(insertStringToFront("ISSUE_VIEW --->", messages));
+  }
+
+
   /**
    * If a view's layout is invalid, calls its layout() method, and invalidates
    * its paint.
@@ -281,16 +322,14 @@ public class WinMgr extends BaseObject {
    * Recursively processes all child views in this manner as well.
    */
   private void updateView(JWindow w) {
-    final boolean db = false;// && mark("logging is on");
 
-    if (db) {
+    if (ISSUE_VIEW) {
       if (!w.layoutValid() || !w.paintValid())
-        pr(VERT_SP, "updateViews");
+        pVIEW(VERT_SP, "updateView", w.name());
     }
 
     if (!w.layoutValid()) {
-      if (db)
-        pr("...window", w.name(), "layout is invalid");
+      pVIEW("...window", w.name(), "layout is invalid");
       w.repaint();
       w.layout();
       w.setLayoutValid();
@@ -301,24 +340,19 @@ public class WinMgr extends BaseObject {
     }
 
     if (!w.paintValid()) {
-      // We are repainting everything, so make the partial valid as well
-      w.setPartialPaintValid(true);
-      if (db)
-        pr("...window", w.name(), "paint is invalid; rendering; bounds:", w.totalBounds());
+      pr("updateView, window paint not valid:", w.name());
+      prepareTextRecord();
+      pVIEW("...window", w.name(), "paint is invalid; rendering; bounds:", w.totalBounds());
       // Mark all children invalid
       for (var c : w.children())
         c.setPaintValid(false);
-      w.render(false);
+      w.render();
       w.setPaintValid(true);
-    } else if (!w.partialPaintValid()) {
-      if (db)
-        pr("...window", w.name(), "partial paint is invalid");
-      w.render(true);
-      w.setPartialPaintValid(true);
     }
 
-    for (var c : w.children())
+    for (var c : w.children()) {
       updateView(c);
+    }
   }
 
   /**
@@ -328,11 +362,11 @@ public class WinMgr extends BaseObject {
    */
   public Throwable closeIfError(Throwable t) {
     if (t != null) {
-     try {
-       close();
-     } catch (Throwable t2) {
-       pr("(...ignoring exception:",t2.getMessage(),")");
-     }
+      try {
+        close();
+      } catch (Throwable t2) {
+        pr("(...ignoring exception:", t2.getMessage(), ")");
+      }
     }
     return t;
   }
@@ -380,8 +414,6 @@ public class WinMgr extends BaseObject {
     return mScreen;
   }
 
-  private Terminal mTerminal;
-  private AbstractScreen mScreen;
 
   public boolean inView(JWindow window) {
     checkNotNull(window);
@@ -485,6 +517,8 @@ public class WinMgr extends BaseObject {
       if (c.layoutValid() && c.paintValid()) {
         var b = c.totalBounds();
         if (mInvalidRect != null && b.intersects(mInvalidRect)) {
+          pr("invalid rect intersects:", c.name());
+          prepareTextRecord();
           c.repaint();
         }
       }
@@ -505,6 +539,11 @@ public class WinMgr extends BaseObject {
   }
 
   //------------------------------------------------------------------
+
+
+  private Terminal mTerminal;
+  private AbstractScreen mScreen;
+  private TextGraphics mTextGraphics;
 
   private WinMgr() {
   }

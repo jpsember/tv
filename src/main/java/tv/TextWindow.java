@@ -2,6 +2,7 @@ package tv;
 
 import com.googlecode.lanterna.TextColor;
 import js.file.Files;
+import js.geometry.IPoint;
 import js.geometry.IRect;
 import js.parsing.DFA;
 import js.parsing.DFACache;
@@ -22,8 +23,8 @@ public class TextWindow extends JWindow implements FocusHandler {
 
     // Load the sample text file
     var f = tvConfig().textFile();
-    Files.assertExists(f,"text_file");
-    String content  = Files.readString(f);
+    Files.assertExists(f, "text_file");
+    String content = Files.readString(f);
     prepareLexemes(content);
   }
 
@@ -39,23 +40,16 @@ public class TextWindow extends JWindow implements FocusHandler {
 
   @Override
   public void paint() {
+    todo("trigger repaint when user changes window bounds");
+
     try {
       prepareToRender();
-
-      var transformStringToClip = mClip.location().negate();
-
-      // Do our calculations in string space, then translate when rendering
-      int syMin = 0;
-      int syMax = mClip.height;
-      int sxMin = 0;
-      int sxMax = mClip.width;
 
       todo("!more clever way of clipping, scrolling to particular start row etc");
 
       // Render the fragments into our grid
       //
       for (var frag : mFrags) {
-        if (frag.mY >= syMax) break;
         for (int j = 0; j < frag.strCount; j++) {
           int sa = j + frag.strStart;
           var ps = mPlacedStrs.get(sa);
@@ -66,7 +60,7 @@ public class TextWindow extends JWindow implements FocusHandler {
       // Render the grid
       //
       var terminal = winMgr().terminal();
-
+      pr("...rendering grid");
       // We only render string when the color has changed, or we've reached the end of a row
       final char UNKNOWN_COLOR_CODE = Character.MAX_VALUE;
 
@@ -74,11 +68,12 @@ public class TextWindow extends JWindow implements FocusHandler {
       var gridIndex = 0;
       var sb = new StringBuilder();
 
-      for (int y = 0; y < mClip.height; y++) {
+      int scount = 0;
+      for (int y = 0; y < mGridSize.y; y++) {
 
-        terminal.setCursorPosition(mClip.x, y);
+        terminal.setCursorPosition(mClip.x, mClip.y + y);
 
-        for (int x = 0; x < mClip.width; x++) {
+        for (int x = 0; x < mGridSize.x; x++) {
 
           var colorCode = mCharGrid[gridIndex + 0];
           var charCode = mCharGrid[gridIndex + 1];
@@ -88,11 +83,11 @@ public class TextWindow extends JWindow implements FocusHandler {
             if (sb.length() != 0) {
               terminal.putString(sb.toString());
               sb.setLength(0);
+              scount++;
             }
             prevColorCode = colorCode;
             int fgndIndex = ((int) colorCode) & 0xff;
             int bgndIndex = (((int) colorCode) >> 8) & 0xff;
-            pr("fgnd, bgnd:",fgndIndex, bgndIndex);
             ColorMgr.SHARED_INSTANCE.setColors(bgndIndex, fgndIndex);
           }
           sb.append(charCode);
@@ -101,25 +96,25 @@ public class TextWindow extends JWindow implements FocusHandler {
         if (sb.length() != 0) {
           terminal.putString(sb.toString());
           sb.setLength(0);
+          scount++;
         }
       }
+      pr("...rendered count:", scount);
+      todo("why do border chars show up but not strings?");
     } catch (IOException e) {
       throw asRuntimeException(e);
     }
   }
 
   private void prepareToRender() {
-    if (mPrepared)
-      return;
     var r = Render.SHARED_INSTANCE;
     mClip = r.clipBounds();
-    mCharGrid = new char[mClip.size().product() * 2];
-    mPrepared = true;
+    mGridSize = r.clipBounds().size();
+    mCharGrid = new char[mGridSize.product() * 2];
   }
 
-  private boolean mPrepared;
   private IRect mClip;
-
+  private IPoint mGridSize;
 
   @Override
   public boolean focusPossible() {
@@ -160,7 +155,7 @@ public class TextWindow extends JWindow implements FocusHandler {
    */
   public File getLexemeDefinitionFile() {
     var f = tvConfig().tokenFile();
-    Files.assertExists(f,"token_file");
+    Files.assertExists(f, "token_file");
     return f;
   }
 
@@ -197,7 +192,7 @@ public class TextWindow extends JWindow implements FocusHandler {
       var col = ColorMgr.SHARED_INSTANCE.parseColor(s);
       mOurStandardColors.add(col);
     }
-ColorMgr.SHARED_INSTANCE.defineColors(mOurStandardColors);
+    ColorMgr.SHARED_INSTANCE.defineColors(mOurStandardColors);
   }
 
   private void prepareLexemes(String content) {
@@ -252,7 +247,7 @@ ColorMgr.SHARED_INSTANCE.defineColors(mOurStandardColors);
       if (!visible) continue;
 
       f.colorCode = colorCodeForToken(tokenId);
-pr("tokenId:",tokenId,"color:",f.colorCode);
+      pr("tokenId:", tokenId, "color:", f.colorCode);
 
       var strStart = lexInfo[ad + Lexer.F_TOKEN_OFFSET];
       var strLen = lexInfo[ad + Lexer.TOKEN_INFO_REC_LEN + Lexer.F_TOKEN_OFFSET] - strStart;
@@ -267,7 +262,7 @@ pr("tokenId:",tokenId,"color:",f.colorCode);
             ps.str = sb.toString();
             ps.x = x;
             ps.y = y;
-            pr("...adding str:",ps.str);
+            pr("...adding str:", ps.str);
             mPlacedStrs.add(ps);
             sb.setLength(0);
           }
@@ -281,7 +276,7 @@ pr("tokenId:",tokenId,"color:",f.colorCode);
       if (sb.length() != 0) {
         var ps = new PlacedStr();
         ps.str = sb.toString();
-        pr("...adding str:",ps.str);
+        pr("...adding str:", ps.str);
         ps.x = x;
         ps.y = y;
         mPlacedStrs.add(ps);
@@ -292,23 +287,29 @@ pr("tokenId:",tokenId,"color:",f.colorCode);
   }
 
 
-  private void plotString(char colorCode, String str, int wx, int sy) {
+  /**
+   * Plot a string, in a particular color, into the view
+   */
+  private void plotString(char colorCode, String str, int sx, int sy) {
 
-    var c = mClip;
-    if (sy < c.y || sy >= c.endY()) return;
+    // Do we need to clip the rectangle?
+    var c = mGridSize;
 
-    var x0 = wx;
-    var x1 = wx + str.length();
+    if (sy < 0 || sy >= c.y) return;
 
-    var cx0 = Math.max(x0, 0);
-    var cx1 = Math.min(x1, c.endX());
-    if (cx0 >= cx1) return;
+    var x0 = sx;
+    var x1 = sx + str.length();
 
-    int charsPerRow = c.width * 2;
+    if (x0 < 0) x0 = 0;
+    if (x1 > c.x)
+      x1 = c.x;
+    if (x0 >= x1) return;
+
+    int charsPerRow = c.x * 2;
     int gridIndex = sy * charsPerRow;
     var grid = mCharGrid;
 
-    for (int k = cx0; k < cx1; k++) {
+    for (int k = x0; k < x1; k++) {
       grid[gridIndex] = colorCode;
       grid[gridIndex + 1] = str.charAt(k - x0);
       gridIndex += 2;
@@ -318,7 +319,6 @@ pr("tokenId:",tokenId,"color:",f.colorCode);
 
   private List<PlacedStr> mPlacedStrs = arrayList();
   private List<TextFrag> mFrags = arrayList();
-
 
   private char[] mCharGrid;
 }
