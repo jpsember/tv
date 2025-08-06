@@ -32,24 +32,17 @@ public final class ColorMgr {
   }
 
   private void setBgndColor(TextColor t) {
-    try {
-      mTerminal.setBackgroundColor(t);
-    } catch (Throwable tt) {
-      throw asRuntimeException(tt);
-    }
+    var tg = WinMgr.SHARED_INSTANCE.textGraphics();
+    tg.setBackgroundColor(t);
+
   }
 
   private void setFgndColor(TextColor t) {
-    try {
-      mTerminal.setForegroundColor(t);
-    } catch (Throwable tt) {
-      throw asRuntimeException(tt);
-    }
+    var tg = WinMgr.SHARED_INSTANCE.textGraphics();
+    tg.setForegroundColor(t);
   }
 
   public void prepareRender(TextGraphics t) {
-    // For optimization, we have our own reference to the WinMgr's Terminal instance
-    mTerminal = WinMgr.SHARED_INSTANCE.terminal();
     if (mNormBgnd != null) return;
     mNormBgnd = t.getBackgroundColor();
     mNormFgnd = t.getForegroundColor();
@@ -81,21 +74,17 @@ public final class ColorMgr {
 //  };
 
   private TextColor mNormBgnd, mNormFgnd;
-  private Terminal mTerminal;
+
+  public void setDefaultColors() {
+    var t = WinMgr.SHARED_INSTANCE.textGraphics();
+    t.setBackgroundColor(mNormBgnd);
+    t.setForegroundColor(mNormFgnd);
+  }
 
   public void setColors(int bgndIndex, int fgndIndex) {
-////    bgndIndex = random().nextInt(sColors.length);
-////    fgndIndex = random().nextInt(sColors.length);
-//    if (bgndIndex == fgndIndex) {
-//      if (bgndIndex == 0) bgndIndex++;
-//      else bgndIndex--;
-//    }
-    try {
-      mTerminal.setBackgroundColor(mColors.get(bgndIndex));
-      mTerminal.setForegroundColor(mColors.get(fgndIndex));
-    } catch (IOException e) {
-      throw asRuntimeException(e);
-    }
+    var t = WinMgr.SHARED_INSTANCE.textGraphics();
+    t.setBackgroundColor(mColors.get(bgndIndex));
+    t.setForegroundColor(mColors.get(fgndIndex));
   }
 
   public TextColor parseColor(String s) {

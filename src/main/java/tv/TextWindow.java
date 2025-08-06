@@ -23,8 +23,8 @@ public class TextWindow extends JWindow implements FocusHandler {
 
     // Load the sample text file
     var f = tvConfig().textFile();
-    Files.assertExists(f,"text_file");
-    String content  = Files.readString(f);
+    Files.assertExists(f, "text_file");
+    String content = Files.readString(f);
     prepareLexemes(content);
   }
 
@@ -39,65 +39,78 @@ public class TextWindow extends JWindow implements FocusHandler {
 
   @Override
   public void paint() {
-    try {
-      prepareToRender();
+    prepareToRender();
 
-      todo("!more clever way of clipping, scrolling to particular start row etc");
+    todo("!more clever way of clipping, scrolling to particular start row etc");
 
-      // Render the fragments into our grid
-      //
-      for (var frag : mFrags) {
-        for (int j = 0; j < frag.strCount; j++) {
-          int sa = j + frag.strStart;
-          var ps = mPlacedStrs.get(sa);
-          plotString(frag.colorCode, ps.str, ps.x, ps.y);
-        }
+    // Render the fragments into our grid
+    //
+    for (var frag : mFrags) {
+      for (int j = 0; j < frag.strCount; j++) {
+        int sa = j + frag.strStart;
+        var ps = mPlacedStrs.get(sa);
+        plotString(frag.colorCode, ps.str, ps.x, ps.y);
       }
-
-      // Render the grid
-      //
-      var terminal = winMgr().terminal();
-      pr("...rendering grid");
-      // We only render string when the color has changed, or we've reached the end of a row
-      final char UNKNOWN_COLOR_CODE = Character.MAX_VALUE;
-
-      char prevColorCode = UNKNOWN_COLOR_CODE;
-      var gridIndex = 0;
-      var sb = new StringBuilder();
-
-      for (int y = 0; y < mGridSize.y; y++) {
-
-        terminal.setCursorPosition(mClip.x, mClip.y + y);
-
-        for (int x = 0; x < mGridSize.x; x++) {
-
-          var colorCode = mCharGrid[gridIndex + 0];
-          var charCode = mCharGrid[gridIndex + 1];
-          gridIndex += 2;
-
-          if (colorCode != prevColorCode) {
-            if (sb.length() != 0) {
-              terminal.putString(sb.toString());
-              sb.setLength(0);
-            }
-            prevColorCode = colorCode;
-            int fgndIndex = ((int) colorCode) & 0xff;
-            int bgndIndex = (((int) colorCode) >> 8) & 0xff;
-            ColorMgr.SHARED_INSTANCE.setColors(bgndIndex, fgndIndex);
-          }
-          sb.append(charCode);
-        }
-
-        if (sb.length() != 0) {
-          terminal.putString(sb.toString());
-          sb.setLength(0);
-        }
-      }
-
-      pr("GRID PLOTTED");
-    } catch (IOException e) {
-      throw asRuntimeException(e);
     }
+
+    // Render the grid
+    //
+    // We only render string when the color has changed, or we've reached the end of a row
+    //
+    final char UNKNOWN_COLOR_CODE = Character.MAX_VALUE;
+
+    var gridIndex = 0;
+    sb = new StringBuilder();
+    cx = 0;
+    cy = 0;
+    c0 = UNKNOWN_COLOR_CODE;
+
+    for (int y = 0; y < mGridSize.y; y++) {
+      for (int x = 0; x < mGridSize.x; x++) {
+
+        var colorCode = mCharGrid[gridIndex + 0];
+        var charCode = mCharGrid[gridIndex + 1];
+        if (charCode == 0) {
+          colorCode = 0;
+          charCode = ' ';
+        }
+
+        gridIndex += 2;
+
+        if (colorCode != c0) {
+          flushString();
+          c0 = colorCode;
+          cx = x + mClip.x;
+          cy = y + mClip.y;
+        }
+        sb.append(charCode);
+      }
+
+      flushString();
+    }
+  }
+
+  private StringBuilder sb;
+  private int cx, cy;
+  private char c0;
+
+  private void flushString() {
+    if (sb.length() == 0)
+      return;
+
+    var str = sb.toString();
+    sb.setLength(0);
+
+    var cm = ColorMgr.SHARED_INSTANCE;
+    if (c0 == 0) {
+      cm.setDefaultColors();
+    } else {
+      int fgndIndex = ((int) c0) & 0xff;
+      int bgndIndex = (((int) c0) >> 8) & 0xff;
+      cm.setColors(bgndIndex, fgndIndex);
+    }
+    var tg = WinMgr.SHARED_INSTANCE.textGraphics();
+    tg.putString(cx, cy, str);
   }
 
   private void prepareToRender() {
@@ -155,7 +168,7 @@ public class TextWindow extends JWindow implements FocusHandler {
    */
   public File getLexemeDefinitionFile() {
     var f = tvConfig().tokenFile();
-    Files.assertExists(f,"token_file");
+    Files.assertExists(f, "token_file");
     return f;
   }
 
@@ -192,7 +205,7 @@ public class TextWindow extends JWindow implements FocusHandler {
       var col = ColorMgr.SHARED_INSTANCE.parseColor(s);
       mOurStandardColors.add(col);
     }
-ColorMgr.SHARED_INSTANCE.defineColors(mOurStandardColors);
+    ColorMgr.SHARED_INSTANCE.defineColors(mOurStandardColors);
   }
 
   private void prepareLexemes(String content) {
@@ -247,7 +260,6 @@ ColorMgr.SHARED_INSTANCE.defineColors(mOurStandardColors);
       if (!visible) continue;
 
       f.colorCode = colorCodeForToken(tokenId);
-pr("tokenId:",tokenId,"color:",f.colorCode);
 
       var strStart = lexInfo[ad + Lexer.F_TOKEN_OFFSET];
       var strLen = lexInfo[ad + Lexer.TOKEN_INFO_REC_LEN + Lexer.F_TOKEN_OFFSET] - strStart;
@@ -262,7 +274,6 @@ pr("tokenId:",tokenId,"color:",f.colorCode);
             ps.str = sb.toString();
             ps.x = x;
             ps.y = y;
-            pr("...adding str:",ps.str);
             mPlacedStrs.add(ps);
             sb.setLength(0);
           }
@@ -276,7 +287,6 @@ pr("tokenId:",tokenId,"color:",f.colorCode);
       if (sb.length() != 0) {
         var ps = new PlacedStr();
         ps.str = sb.toString();
-        pr("...adding str:",ps.str);
         ps.x = x;
         ps.y = y;
         mPlacedStrs.add(ps);

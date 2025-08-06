@@ -9,8 +9,10 @@ import java.util.Stack;
 
 import com.googlecode.lanterna.TerminalPosition;
 import com.googlecode.lanterna.TerminalSize;
+import com.googlecode.lanterna.graphics.TextGraphics;
 import com.googlecode.lanterna.input.KeyStroke;
 import com.googlecode.lanterna.screen.AbstractScreen;
+import com.googlecode.lanterna.screen.Screen;
 import com.googlecode.lanterna.screen.TerminalScreen;
 import com.googlecode.lanterna.terminal.DefaultTerminalFactory;
 import com.googlecode.lanterna.terminal.Terminal;
@@ -164,7 +166,7 @@ public class WinMgr extends BaseObject {
     mScreen.setCursorPosition(null);
   }
 
-  public AbstractScreen abstractScreen() {
+  public  Screen abstractScreen() {
     return mScreen;
   }
 
@@ -249,7 +251,6 @@ public class WinMgr extends BaseObject {
       redrawAllTreesIntersectingInvalidRect();
 
       // Make changes visible
-      pr("MSCREEN.REFRESH");
       mScreen.refresh();
     } catch (Throwable t) {
       m.closeIfError(t);
@@ -343,9 +344,8 @@ public class WinMgr extends BaseObject {
 
     try {
       var f = new DefaultTerminalFactory();
-      // f.setUnixTerminalCtrlCBehaviour(CtrlCBehaviour.TRAP);
-      mTerminal = f.createTerminal();
-      mScreen = new TerminalScreen(mTerminal);
+      mScreen = f.createScreen();
+      mTextGraphics = mScreen.newTextGraphics();
       mScreen.startScreen();
       winMgr().hideCursor();
     } catch (Throwable t) {
@@ -363,15 +363,18 @@ public class WinMgr extends BaseObject {
     pr();
     System.out.println();
     mScreen = null;
-    mTerminal = null;
   }
 
   public boolean isOpen() {
     return mScreen != null;
   }
 
-  public AbstractScreen screen() {
+  public Screen screen() {
     return mScreen;
+  }
+
+  public TextGraphics textGraphics() {
+    return mTextGraphics;
   }
 
   public boolean inView(JWindow window) {
@@ -397,10 +400,6 @@ public class WinMgr extends BaseObject {
   }
 
   private IRect mInvalidRect;
-
-  public Terminal terminal() {
-    return mTerminal;
-  }
 
   // ------------------------------------------------------------------
   // Trees of JContainers
@@ -500,9 +499,8 @@ public class WinMgr extends BaseObject {
   private WinMgr() {
   }
 
-  private Terminal mTerminal;
-  private AbstractScreen mScreen;
-
+  private Screen mScreen;
+  private TextGraphics mTextGraphics;
   static {
     SHARED_INSTANCE = new WinMgr();
   }
