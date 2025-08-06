@@ -196,7 +196,7 @@ public class WinMgr extends BaseObject {
 
         boolean processed = false;
 
-        pr("key:",key);
+        pr("key:", key);
         switch (key.toString()) {
           case KeyEvent.QUIT:
             quit();
@@ -302,20 +302,13 @@ public class WinMgr extends BaseObject {
     }
 
     if (!w.paintValid()) {
-      // We are repainting everything, so make the partial valid as well
-      w.setPartialPaintValid(true);
       if (db)
         pr("...window", w.name(), "paint is invalid; rendering; bounds:", w.totalBounds());
       // Mark all children invalid
       for (var c : w.children())
         c.setPaintValid(false);
-      w.render(false);
+      w.render();
       w.setPaintValid(true);
-    } else if (!w.partialPaintValid()) {
-      if (db)
-        pr("...window", w.name(), "partial paint is invalid");
-      w.render(true);
-      w.setPartialPaintValid(true);
     }
 
     for (var c : w.children())
@@ -329,11 +322,11 @@ public class WinMgr extends BaseObject {
    */
   public Throwable closeIfError(Throwable t) {
     if (t != null) {
-     try {
-       close();
-     } catch (Throwable t2) {
-       pr("(...ignoring exception:",t2.getMessage(),")");
-     }
+      try {
+        close();
+      } catch (Throwable t2) {
+        pr("(...ignoring exception:", t2.getMessage(), ")");
+      }
     }
     return t;
   }

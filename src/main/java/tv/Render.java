@@ -121,20 +121,18 @@ public final class Render extends BaseObject {
   /**
    * Prepare for subsequent operations to occur with a particular window
    */
-  static Render prepare(JWindow window, boolean partial) {
+  static Render prepare(JWindow window) {
     var r = sShared;
     SHARED_INSTANCE = r;
-    r.auxPrepare(window, partial);
+    r.auxPrepare(window);
     return r;
   }
 
-  private void auxPrepare(JWindow window, boolean partial) {
-    mWindow = window;
+  private void auxPrepare(JWindow window) {
     mClipBounds = window.totalBounds();
     var t = winMgr().abstractScreen().newTextGraphics();
     ColorMgr.SHARED_INSTANCE.prepareRender(t);
     mTextGraphics = t;
-    mPartial = partial;
   }
 
   static Render unprepare() {
@@ -143,7 +141,6 @@ public final class Render extends BaseObject {
   }
 
   private void auxUnprepare() {
-    mWindow = null;
     mClipBounds = null;
     mTextGraphics = null;
     SHARED_INSTANCE = null;
@@ -164,13 +161,7 @@ public final class Render extends BaseObject {
     return IRect.rectContainingPoints(p1, p2);
   }
 
-  public boolean partial() {
-    return mPartial;
-  }
-
   private IRect mClipBounds;
-  private JWindow mWindow;
   private TextGraphics mTextGraphics;
-  private boolean mPartial;
   private static final Render sShared = new Render();
 }
