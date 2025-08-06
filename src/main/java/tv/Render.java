@@ -13,8 +13,6 @@ import js.geometry.IPoint;
 import js.geometry.IRect;
 import js.geometry.MyMath;
 
-import static tv.Util.*;
-
 public final class Render extends BaseObject {
 
   /**

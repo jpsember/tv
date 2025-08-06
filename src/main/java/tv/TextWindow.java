@@ -65,11 +65,13 @@ public class TextWindow extends JWindow implements FocusHandler {
     cy = 0;
     c0 = UNKNOWN_COLOR_CODE;
 
-    for (int y = 0; y < mGridSize.y; y++) {
-      for (int x = 0; x < mGridSize.x; x++) {
+    var gs = mGridSize;
+    var cg = mCharGrid;
 
-        var colorCode = mCharGrid[gridIndex + 0];
-        var charCode = mCharGrid[gridIndex + 1];
+    for (int y = 0; y < gs.y; y++) {
+      for (int x = 0; x < gs.x; x++) {
+        var colorCode = cg[gridIndex + 0];
+        var charCode = cg[gridIndex + 1];
         if (charCode == 0) {
           colorCode = 0;
           charCode = ' ';
@@ -77,7 +79,7 @@ public class TextWindow extends JWindow implements FocusHandler {
 
         gridIndex += 2;
 
-        if (colorCode != c0) {
+        if (sb.length() == 0 || colorCode != c0) {
           flushString();
           c0 = colorCode;
           cx = x + mClip.x;
@@ -109,22 +111,22 @@ public class TextWindow extends JWindow implements FocusHandler {
       int bgndIndex = (((int) c0) >> 8) & 0xff;
       cm.setColors(bgndIndex, fgndIndex);
     }
-    var tg =  mTextGraphics;
+    var tg = mTextGraphics;
     tg.putString(cx, cy, str);
   }
 
   private void prepareToRender() {
-    if (mPrepared)
-      return;
-    todo("!do we need to rebuild the mCharGrid each time?");
     var r = Render.SHARED_INSTANCE;
-    mClip = r.clipBounds();
-    mGridSize = mClip.size();
+
+    var b = r.clipBounds();
+    if (b.size().equals(mGridSize))
+      return;
+
+    mClip = b;
+    mGridSize = b.size();
     mCharGrid = new char[mGridSize.product() * 2];
-    mPrepared = true;
   }
 
-  private boolean mPrepared;
   private IRect mClip;
   private IPoint mGridSize;
 
