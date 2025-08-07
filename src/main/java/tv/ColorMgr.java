@@ -3,11 +3,9 @@ package tv;
 import static js.base.Tools.*;
 
 import com.googlecode.lanterna.TextColor;
-import com.googlecode.lanterna.graphics.TextGraphics;
 import js.geometry.MyMath;
 
 import java.awt.*;
-import java.util.ArrayList;
 import java.util.List;
 
 import static tv.Util.*;
@@ -19,27 +17,7 @@ public final class ColorMgr {
   private ColorMgr() {
   }
 
-//  public void setRandom() {
-//    setBgndColor(mNormBgnd);
-//    setFgndColor(MyMath.randomElement(random(), mColors)); //sColors[random().nextInt(sColors.length)]);
-//  }
-//
-//  public void setDefault() {
-//    setBgndColor(mNormBgnd);
-//    setFgndColor(mNormFgnd);
-//  }
-
-//  private void setBgndColor(TextColor t) {
-//    var tg = mTextGraphics;
-//    tg.setBackgroundColor(t);
-//  }
-//
-//  private void setFgndColor(TextColor t) {
-//    mTextGraphics.setForegroundColor(t);
-//  }
-
   public void prepare() {
-//    if (mNormBgnd != null) return;
     var t = mTextGraphics;
     mNormBgnd = t.getBackgroundColor();
     mNormFgnd = t.getForegroundColor();
@@ -52,7 +30,6 @@ public final class ColorMgr {
       mSecond = 0;
     }
 
-
     List<Col> colors = arrayList();
 
     for (var s : split(defColorStr, ' ')) {
@@ -61,40 +38,52 @@ public final class ColorMgr {
       var col = ColorMgr.SHARED_INSTANCE.parseColor(s);
       colors.add(col);
     }
-//    for (var c : colors) {
-//      pr("color:",c);
-//      var h = c.toHSV();
-//      pr("hsv:",h);
-//      var c2 =  Col.fromHSV(h);
-//      pr("back to col:",c2);
-//    }
-//die();
 
     // Construct pairs
-    var j = new TextColor[2 * colors.size()];
+    List<TextColor> j = arrayList();
 
+    checkState(mFirst != mSecond);
 
-    int i = 0;
     for (var c : colors) {
       var cLight = lighter(c);
       pr("orig:", c, CR, "lite:", cLight);
-      j[i + mFirst] = cLight.toTextColor();
-      j[i + mSecond] = c.toTextColor();
-      pr("i:", i, INDENT,
-          cLight, CR, c);
-      checkState(mFirst != mSecond);
-      pr("converted:", INDENT, j[i + mFirst], CR, j[i + mSecond]);
-      i += 2;
+      var first = cLight.toTextColor();
+      var sec = c.toTextColor();
+      if (mFirst > mSecond) {
+        var tmp = first;
+        first = sec;
+        sec = tmp;
+      }
+      j.add(first);
+      j.add(sec);
     }
-    mColorPairs = j;
+
+
+    if (true) {
+      j.clear();
+      j.add(tc(4, 3, 1));
+      j.add(tc(1, 1, 2));
+    }
+    mColorPairs = j.toArray(new OurTextColor[0]);
+    pr("colorPairs:",INDENT,  j);
+
   }
 
   private static Col lighter(Col c) {
-    var hsv = c.toHSV();
-    var value = hsv[2];
-    var newValue =  (float) Math.pow(  value, 0.12f) ;
-    hsv[2] = newValue;
-    return Col.fromHSV(hsv);
+    if (false) {
+      var hsv = c.toHSV();
+      var value = hsv[2];
+      var newValue = (float) Math.pow(value, 0.12f);
+      hsv[2] = newValue;
+      return Col.fromHSV(hsv);
+    } else {
+      return new Col(lt(c.r), lt(c.g), lt(c.b));
+    }
+  }
+
+  private static int lt(int x) {
+    float diff = 255 - x;
+    return (int) Math.min(255, (diff * .80) + x);
   }
 
   private static int lightVal(TextColor c) {
@@ -130,25 +119,27 @@ public final class ColorMgr {
 
     var c0 = mColorPairs[i + 0];
     var c1 = mColorPairs[i + 1];
+    pr("set fgnd color:",c1);
+    pr("set bgnd color:",c0);
+
     t.setBackgroundColor(c0);
     t.setForegroundColor(c1);
-
-    if (++wtf < 105) {
-      pr("index:", index, "i:", i, "mColorPairs:", c0, c1);
-    }
   }
 
-  int wtf = 0;
-  private static String defColorStr = "#EA15AC #B60EF1 #4F0DF2 #149CEB #4DAAB2 #42BD88 #EF8B10 #EF1021 #A9CD32 #C48F3B #AC537C";
+  private static String defColorStr =
+      "#4DAAB2 #42BD88 ";
+  //"#149CEB #EA15AC #B60EF1 #4F0DF2 #4DAAB2 #42BD88 #EF8B10 #EF1021 #A9CD32 #C48F3B #AC537C";
 
 
   private Col parseColor(String s) {
     try {
       checkArgument(s.length() == 6, s);
       var value = Integer.parseInt(s, 16);
-      return new Col((value >> 16) & 0xff,
+      var cl = new Col((value >> 16) & 0xff,
           (value >> 8) & 0xff,
           value & 0xff);
+      pr("convert:", s, "=>", cl);
+      return cl;
     } catch (Throwable t) {
       throw badArg("trouble parsing color from:", quote(s), t.getMessage());
     }
@@ -204,6 +195,10 @@ public final class ColorMgr {
     }
   }
 
+  private static OurTextColor tc(int r, int g, int b) {
+    return new OurTextColor(r, g, b);
+  }
+
   /**
    * Our implementation of the TextColor interface
    */
@@ -212,6 +207,7 @@ public final class ColorMgr {
     public OurTextColor(Col x) {
       this(scale(x.r), scale(x.g), scale(x.b));
     }
+
 
     private static int scale(int colVal) {
       return (int) MyMath.clamp(colVal * (6 / 256f), 0, 5);
@@ -225,6 +221,10 @@ public final class ColorMgr {
     private static int sNextIndex;
 
     public OurTextColor(int r, int g, int b) {
+      checkArgument(r >= 0 && r <= 5, "r:", r);
+      checkArgument(g >= 0 && g <= 5, "g:", g);
+      checkArgument(b >= 0 && b <= 5, "b:", b);
+
       red = r;
       green = g;
       blue = b;
