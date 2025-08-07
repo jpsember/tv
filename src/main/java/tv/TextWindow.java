@@ -100,6 +100,7 @@ public class TextWindow extends JWindow implements FocusHandler {
   private int cx, cy;
   private char c0;
 
+
   private void flushString() {
     if (sb.length() == 0)
       return;
@@ -110,7 +111,14 @@ public class TextWindow extends JWindow implements FocusHandler {
     if (c0 == 0) {
       cm.setDefaultColors();
     } else {
-      cm.setColors(((int)c0) - 1);
+      if (((cx+cy)&1) == 1) {
+        mTextGraphics.setBackgroundColor(TextColor.ANSI.GREEN);
+        mTextGraphics.setForegroundColor(TextColor.ANSI.BLACK);
+      } else {
+        mTextGraphics.setBackgroundColor(TextColor.ANSI.WHITE);
+        mTextGraphics.setForegroundColor(TextColor.ANSI.BLUE_BRIGHT);
+      }
+    //  cm.setColors(((int)c0) - 1);
 //      int fgndIndex = ((int) c0) & 0xff;
 //      int bgndIndex = (((int) c0) >> 8) & 0xff;
 //      cm.setColors(bgndIndex, fgndIndex);

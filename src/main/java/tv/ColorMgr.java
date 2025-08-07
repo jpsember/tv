@@ -205,13 +205,9 @@ public final class ColorMgr {
   private static class OurTextColor implements TextColor {
 
     public OurTextColor(Col x) {
-      this(scale(x.r), scale(x.g), scale(x.b));
+      this(x.r, x.g, x.b);
     }
 
-
-    private static int scale(int colVal) {
-      return (int) MyMath.clamp(colVal * (6 / 256f), 0, 5);
-    }
 
     @Override
     public String toString() {
@@ -221,15 +217,16 @@ public final class ColorMgr {
     private static int sNextIndex;
 
     public OurTextColor(int r, int g, int b) {
-      checkArgument(r >= 0 && r <= 5, "r:", r);
-      checkArgument(g >= 0 && g <= 5, "g:", g);
-      checkArgument(b >= 0 && b <= 5, "b:", b);
+      checkArgument(r >= 0 && r <= 255, "r:", r);
+      checkArgument(g >= 0 && g <= 255, "g:", g);
+      checkArgument(b >= 0 && b <= 255, "b:", b);
 
       red = r;
       green = g;
       blue = b;
 
       var index = sNextIndex++;
+      todo("Is this going to be correct?");
       mForegroundSGR = String.format("%d%d", 3, index).getBytes();
       mBackgroundSGR = String.format("%d%d", 4, index).getBytes();
     }
