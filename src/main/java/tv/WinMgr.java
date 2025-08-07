@@ -343,7 +343,12 @@ public class WinMgr extends BaseObject {
       var f = new DefaultTerminalFactory();
       mScreen = f.createScreen();
       mTextGraphics = mScreen.newTextGraphics();
+      mTextGraphics =  mScreen.newTextGraphics();
+      ColorMgr.SHARED_INSTANCE.prepare();
+
       mScreen.startScreen();
+
+
       winMgr().hideCursor();
     } catch (Throwable t) {
       throw asRuntimeException(t);

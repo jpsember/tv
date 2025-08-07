@@ -37,6 +37,9 @@ public class TextWindow extends JWindow implements FocusHandler {
     return "TextWindow";
   }
 
+  // A value for a grid cell's color that is guaranteed not to appear
+  private static final char UNKNOWN_COLOR_CODE = Character.MAX_VALUE;
+
   @Override
   public void paint() {
     prepareToRender();
@@ -57,7 +60,6 @@ public class TextWindow extends JWindow implements FocusHandler {
     //
     // We only render string when the color has changed, or we've reached the end of a row
     //
-    final char UNKNOWN_COLOR_CODE = Character.MAX_VALUE;
 
     var gridIndex = 0;
     sb = new StringBuilder();
@@ -79,7 +81,7 @@ public class TextWindow extends JWindow implements FocusHandler {
 
         gridIndex += 2;
 
-        if (sb.length() == 0 || colorCode != c0) {
+        if (colorCode != c0) {
           flushString();
           c0 = colorCode;
           cx = x + mClip.x;
@@ -92,6 +94,8 @@ public class TextWindow extends JWindow implements FocusHandler {
     }
   }
 
+  private static final int BYTES_PER_GRID_CELL = 2;
+
   private StringBuilder sb;
   private int cx, cy;
   private char c0;
@@ -101,18 +105,21 @@ public class TextWindow extends JWindow implements FocusHandler {
       return;
 
     var str = sb.toString();
-    sb.setLength(0);
 
     var cm = ColorMgr.SHARED_INSTANCE;
     if (c0 == 0) {
       cm.setDefaultColors();
     } else {
-      int fgndIndex = ((int) c0) & 0xff;
-      int bgndIndex = (((int) c0) >> 8) & 0xff;
-      cm.setColors(bgndIndex, fgndIndex);
+      cm.setColors(((int)c0) - 1);
+//      int fgndIndex = ((int) c0) & 0xff;
+//      int bgndIndex = (((int) c0) >> 8) & 0xff;
+//      cm.setColors(bgndIndex, fgndIndex);
     }
     var tg = mTextGraphics;
     tg.putString(cx, cy, str);
+
+    sb.setLength(0);
+    c0 = UNKNOWN_COLOR_CODE;
   }
 
   private void prepareToRender() {
@@ -124,7 +131,7 @@ public class TextWindow extends JWindow implements FocusHandler {
 
     mClip = b;
     mGridSize = b.size();
-    mCharGrid = new char[mGridSize.product() * 2];
+    mCharGrid = new char[mGridSize.product() * BYTES_PER_GRID_CELL];
   }
 
   private IRect mClip;
@@ -160,9 +167,10 @@ public class TextWindow extends JWindow implements FocusHandler {
   }
 
   private char colorCodeForToken(int tokenId) {
-    int fgnd = tokenId;
-    int bgnd = (tokenId + mOurStandardColors.size() / 2) % mOurStandardColors.size();
-    return (char) ((fgnd << 8) | bgnd);
+    return mTokenIdColorCodes.get(tokenId);
+//    int fgnd = tokenId;
+//    int bgnd = (tokenId + mOurStandardColors.size() / 2) % mOurStandardColors.size();
+//    return (char) ((fgnd << 8) | bgnd);
   }
 
   /**
@@ -194,33 +202,20 @@ public class TextWindow extends JWindow implements FocusHandler {
     return text;
   }
 
-  private static String defColorStr = "#EF8B10 #EF1021 #EA15AC #B60EF1 #4F0DF2 #149CEB #4DAAB2 #42BD88 #A9CD32 #C48F3B #AC537C";
+   private List<Character> mTokenIdColorCodes;
 
-  private List<TextColor> mOurStandardColors = arrayList();
-  private List<TextColor> mTokenIdColorCodes;
-
-  private void prepareColors() {
-
-    for (var s : split(defColorStr, ' ')) {
-      s = chompPrefix(s, "#");
-      if (s.isEmpty()) continue;
-      var col = ColorMgr.SHARED_INSTANCE.parseColor(s);
-      mOurStandardColors.add(col);
-    }
-    ColorMgr.SHARED_INSTANCE.defineColors(mOurStandardColors);
-  }
 
   private void prepareLexemes(String content) {
     mPlacedStrs.clear();
     var dfa = getTextDFA();
 
-    prepareColors();
+    //prepareColors();
 
     // determine color codes for each token id
     mTokenIdColorCodes = arrayList();
     for (int i = 0; i < dfa.tokenNames().length; i++) {
-      var j = mOurStandardColors.get(i % mOurStandardColors.size());
-      mTokenIdColorCodes.add(j);
+    //  var j = mOurStandardColors.get(i % mOurStandardColors.size());
+      mTokenIdColorCodes.add((char)ColorMgr.SHARED_INSTANCE.pick(i));
     }
 
     var s = new Lexer(dfa).withNoSkip().withAcceptUnknownTokens().withText(content);
@@ -300,7 +295,7 @@ public class TextWindow extends JWindow implements FocusHandler {
 
 
   /**
-   * Plot a string, in a particular color, into the view
+   * Plot a string, in a particular color, into the grid
    */
   private void plotString(char colorCode, String str, int sx, int sy) {
 
@@ -317,14 +312,14 @@ public class TextWindow extends JWindow implements FocusHandler {
       x1 = c.x;
     if (x0 >= x1) return;
 
-    int charsPerRow = c.x * 2;
-    int gridIndex = sy * charsPerRow;
+
+    int gridIndex = ((sy * c.x) + x0) * BYTES_PER_GRID_CELL;
     var grid = mCharGrid;
 
     for (int k = x0; k < x1; k++) {
       grid[gridIndex] = colorCode;
       grid[gridIndex + 1] = str.charAt(k - x0);
-      gridIndex += 2;
+      gridIndex += BYTES_PER_GRID_CELL;
     }
   }
 

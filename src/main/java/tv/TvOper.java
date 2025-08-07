@@ -50,7 +50,7 @@ public class TvOper extends AppOper {
     var mgr = winMgr();
 
     try {
-      mgr.open();
+       mgr.open();
       mTextWindow = new TextWindow();
 
       // Construct root container
@@ -60,7 +60,8 @@ public class TvOper extends AppOper {
       {
         var h = new MessageWindow();
         Util.sHeader = h;
-        h.setMessageAt(MessageWindow.CENTER, "tv 1.0").setMessageAt(MessageWindow.RIGHT, "more to come");
+        h.setMessageAt(MessageWindow.CENTER, "tv 1.0");
+        //h.setMessageAt(MessageWindow.RIGHT, "more to come");
         mgr.chars(1).window(h);
       }
 

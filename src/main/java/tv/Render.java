@@ -130,9 +130,7 @@ public final class Render extends BaseObject {
 
   private void auxPrepare(JWindow window) {
     mClipBounds = window.totalBounds();
-    mTextGraphics = winMgr().abstractScreen().newTextGraphics();
-    ColorMgr.SHARED_INSTANCE.prepareRender( );
-  }
+    }
 
   static Render unprepare() {
     SHARED_INSTANCE.auxUnprepare();
@@ -141,7 +139,7 @@ public final class Render extends BaseObject {
 
   private void auxUnprepare() {
     mClipBounds = null;
-    mTextGraphics = null;
+//    mTextGraphics = null;
     SHARED_INSTANCE = null;
   }
 
