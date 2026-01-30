@@ -1,16 +1,16 @@
 package tv;
 
-import com.googlecode.lanterna.TextColor;
 import js.file.Files;
 import js.geometry.IPoint;
 import js.geometry.IRect;
+import js.geometry.MyMath;
 import js.parsing.DFA;
 import js.parsing.DFACache;
 import js.parsing.Lexer;
 
 import java.io.File;
-import java.io.IOException;
 import java.util.List;
+import java.util.Random;
 
 import static tv.Util.*;
 
@@ -111,18 +111,9 @@ public class TextWindow extends JWindow implements FocusHandler {
     if (c0 == 0) {
       cm.setDefaultColors();
     } else {
-      if (((cx+cy)&1) == 1) {
-        mTextGraphics.setBackgroundColor(TextColor.ANSI.GREEN);
-        mTextGraphics.setForegroundColor(TextColor.ANSI.BLACK);
-      } else {
-        mTextGraphics.setBackgroundColor(TextColor.ANSI.WHITE);
-        mTextGraphics.setForegroundColor(TextColor.ANSI.BLUE_BRIGHT);
+      int code = c0 - 1;
+      cm.setCustomColors(code);
       }
-    //  cm.setColors(((int)c0) - 1);
-//      int fgndIndex = ((int) c0) & 0xff;
-//      int bgndIndex = (((int) c0) >> 8) & 0xff;
-//      cm.setColors(bgndIndex, fgndIndex);
-    }
     var tg = mTextGraphics;
     tg.putString(cx, cy, str);
 
@@ -210,21 +201,26 @@ public class TextWindow extends JWindow implements FocusHandler {
     return text;
   }
 
-   private List<Character> mTokenIdColorCodes;
+  private List<Character> mTokenIdColorCodes;
 
 
   private void prepareLexemes(String content) {
     mPlacedStrs.clear();
     var dfa = getTextDFA();
 
-    //prepareColors();
+    todo("!add user config of color codes");
 
     // determine color codes for each token id
     mTokenIdColorCodes = arrayList();
-    for (int i = 0; i < dfa.tokenNames().length; i++) {
-    //  var j = mOurStandardColors.get(i % mOurStandardColors.size());
-      mTokenIdColorCodes.add((char)ColorMgr.SHARED_INSTANCE.pick(i));
+
+    for (int i = 0; i < 16; i++) {
+      for (int j = 0; j < 16; j++) {
+        if (i == j) continue;
+        mTokenIdColorCodes.add((char)(1 + (i*16 + j)));
+      }
     }
+    MyMath.permute(mTokenIdColorCodes, new Random(1967));
+
 
     var s = new Lexer(dfa).withNoSkip().withAcceptUnknownTokens().withText(content);
     mFrags.clear();
